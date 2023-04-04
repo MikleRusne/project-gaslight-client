@@ -588,6 +588,32 @@ public class Level : MonoBehaviour
 
     
     #region Tile selection
+
+    public void TurnOffAllDisplays()
+    {
+        Debug.Log("Turning off displays");
+
+        foreach (var tileDisplay in TileDisplays)
+        {
+            tileDisplay.gameObject.SetActive(false);
+        }
+    }
+    public void TurnOnAllDisplays()
+    {
+        Debug.Log("Turning on displays");
+        foreach (var tileDisplay in TileDisplays)
+        {
+            tileDisplay.gameObject.SetActive(true);
+        }
+    }
+
+    public void ChangeTileDisplayState(int[] locations, bool newState)
+    {
+        foreach (var location in locations)
+        {
+            TileDisplays[location].gameObject.SetActive(newState);
+        }
+    }
     [HideInInspector]public bool isATileSelected = false;
     public Tile selectedTile;
 

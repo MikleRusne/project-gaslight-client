@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gaslight.Characters.Logic;
+using Tiles;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UIElements;
@@ -10,6 +11,7 @@ using UnityEngine.UIElements;
 namespace GameManagement{
     public class PlayerController
     {
+        public SelectUnderMouse _selector;
         public DirectiveManager _directiveManager;
         public DirectiveIconManager _directiveIcon;
         public VisualElement _playerControllerUI;
@@ -18,12 +20,14 @@ namespace GameManagement{
         public PlayerController(DirectiveManager manager,
             DirectiveIconManager directiveIcon,
             VisualElement playerControllerUI,
-            VisualTreeAsset moveDisplayPrefab)
+            VisualTreeAsset moveDisplayPrefab,
+            SelectUnderMouse selector)
         {
             _directiveIcon = directiveIcon;
             _directiveManager = manager;
             _playerControllerUI = playerControllerUI;
             _moveDisplayPrefab = moveDisplayPrefab;
+            _selector = selector;
         }
 
         public bool acceptInput = false;
@@ -41,9 +45,14 @@ namespace GameManagement{
             Debug.Log("Performing " + name + " with " + character.name);
         }
         public async Task Execute()
-        { 
-            
+        {
             var players = Level.instance.GetCharactersOfFaction(EFaction.Player);
+            Level.instance.TurnOnAllDisplays();
+            var selectedTile = await _selector.SelectTile((Tile tile) =>
+            {
+                return true;
+            });
+            Debug.Log("Selected tile "+ selectedTile);
             var currentPlayer = players[0];
             var currentRoles = currentPlayer.roles;
             var validMoves =currentRoles.Select((cr) => _directiveManager.GetValidDirectivesForRole(cr)).SelectMany(x=>x).ToList();
@@ -74,8 +83,8 @@ namespace GameManagement{
             {
                 await Task.Yield();
             }
+            Level.instance.TurnOffAllDisplays();
             await (Task.Delay(2000));
-             return;
         }
     }
 
@@ -138,6 +147,7 @@ public class OrchestratorWithControllers : MonoBehaviour
     public VisualElement _playerMovesUI;
     public VisualElement _playerControllerUI;
     public CameraController cam = default;
+    public SelectUnderMouse _selector;
     public PlayerController playerController = default;
     public EnemyController enemyController = default;
 
@@ -157,19 +167,19 @@ public class OrchestratorWithControllers : MonoBehaviour
     // public Dictionary<EFaction, List<GameAction>> QueuedActions = new Dictionary<EFaction, List<GameAction>>();
     public void Awake()
     {
-        
-
         _uiDocument = this.GetComponent<UIDocument>();
         _enemyMovesUI = _uiDocument.rootVisualElement.Q("EnemyMovesContainer");
         _playerMovesUI = _uiDocument.rootVisualElement.Q("PlayerMovesContainer");
         _playerControllerUI = _uiDocument.rootVisualElement.Q("PLAYER_CONTROLLER");
-        playerController = new PlayerController(_directiveManager, _directiveIcon, _playerControllerUI, validMoveTemplate);
+        playerController = new PlayerController(_directiveManager, _directiveIcon, _playerControllerUI, validMoveTemplate, _selector);
         enemyController = new EnemyController(currentTurnFollowerPrefab, cam);
         HideEnemyTurnUI();
         HidePlayerTurnUI();
     }
+    
     public void OnLevelGenerated()
     {
+        Level.instance.TurnOffAllDisplays();
         TurnLoop();
     }
     public bool playerTurn = default;

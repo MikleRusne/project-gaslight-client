@@ -34,6 +34,9 @@ public struct DirectiveTarget
 [Serializable]
 public abstract class GDirective
 {
+    public abstract bool IsLocationValid(SimpleCharacter invoker, int location);
+    public abstract void StepCondition();
+    public bool AllConditionsFulfillled;
     
     public abstract string Name {get;}
     public enum GDType
@@ -68,6 +71,17 @@ public abstract class GDirective
 
 public class MoveDirective : GDirective
 {
+    
+    public override bool IsLocationValid(SimpleCharacter invoker, int location)
+    {
+        return true;
+    }
+
+    public override void StepCondition()
+    {
+        
+    }
+
     public override string Name => "move";
     public int index;
     public override Task Initialize()
@@ -93,68 +107,18 @@ public class MoveDirective : GDirective
 }
 
 [Serializable]
-public class PatrolDirective : GDirective
-{
-    public int lastVisited;
-
-    public List<int> route;
-
-    public override string Name => "patrol";
-
-    public override Task Initialize()
-    {
-        var prefix_string = "patrol_target_";
-        var temp = targets
-            .FindAll(targ =>
-            {
-                return targ.key.StartsWith(prefix_string);
-
-            })
-            .OrderBy((a) =>
-            {
-                return a.key;
-            })
-            .Select((targ) =>
-                {
-                    // Debug.Log(targ.key + ": "+ targ.value);
-                    return Int32.Parse(
-                        targ.value
-                    );
-                }
-            )
-            .ToList();
-        // Debug.Log(temp.ToString());
-        route = temp;
-        lastVisited = 0;
-        return Task.CompletedTask;
-    }
-
-    public override async Task DoAction()
-    {
-        Debug.Log("Patrol invoked by " + this.Invoker.name);
-        if (Invoker is Actor)
-        {
-            if (Invoker == null)
-            {
-                Debug.LogError("Invoker is null");
-            }
-
-            
-            // Debug.Log("Moving character");
-            await ((Actor) Invoker).MoveToTile(route[lastVisited]);
-            if (Level.instance.GetTileOccupant(route[lastVisited]).name == Invoker.name)
-            {
-                Debug.Log("Reached patrol route target, incrementing");
-                lastVisited = (lastVisited + 1) % route.Count;
-            }
-            
-        }
-    }
-}
-
-[Serializable]
 public class ForegoDirective : GDirective
 {
+    public override bool IsLocationValid(SimpleCharacter invoker, int location)
+    {
+        return true;
+    }
+
+    public override void StepCondition()
+    {
+        
+    }
+
     public override string Name => "nothing";
     public override Task Initialize()
     {
@@ -173,13 +137,6 @@ public class ForegoDirective : GDirective
         {
             switch (directiveType)
             {
-                case "patrol":
-                    // Debug.Log("Creating patrol");
-                    var temp= new PatrolDirective();
-                    temp.FillTargets(targets);
-                    // Debug.Log("Initing patrol");
-                    // temp.Initialize();
-                    return temp;
                 default:
                     throw new ArgumentException("Invalid directive type: " + directiveType);
             }

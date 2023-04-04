@@ -393,7 +393,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 811190319}
-  m_LocalRotation: {x: 0.4331887, y: -0.000000026860931, z: 0.00000001291003, w: 0.90130323}
+  m_LocalRotation: {x: 0.4331887, y: -0.000000017947901, z: 0.000000008626207, w: 0.90130323}
   m_LocalPosition: {x: 0, y: 10.5, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -813,7 +813,7 @@ PrefabInstance:
     - target: {fileID: 1250913913894504471, guid: dbe677dfe704abb4aa23f5e626b9016b,
         type: 3}
       propertyPath: m_ActionEvents.Array.data[1].m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: SelectHighlightedTile
+      value: ConfirmSelection
       objectReference: {fileID: 0}
     - target: {fileID: 1250913913894504471, guid: dbe677dfe704abb4aa23f5e626b9016b,
         type: 3}
@@ -907,7 +907,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1344344275}
-  m_LocalRotation: {x: 0.4331887, y: -0.000000026860931, z: 0.00000001291003, w: 0.90130323}
+  m_LocalRotation: {x: 0.4331887, y: -0.000000017947901, z: 0.000000008626207, w: 0.90130323}
   m_LocalPosition: {x: 0, y: 10.5, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1259,7 +1259,7 @@ MonoBehaviour:
     behavior: default
     BehaviorTargets: []
   characterAssetDB: {fileID: 11400000, guid: 1300cc6d4f532444d9472dc04232b225, type: 2}
-  directiveManager: {fileID: 11400000, guid: e2e2ab099324850409633c3cb6c51b4d, type: 2}
+  directiveManager: {fileID: 0}
   Tiles: []
   LevelGenerated:
     m_PersistentCalls:
@@ -1352,8 +1352,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3b9d6caacdf2474fa8a52667d783a4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isMouseOverUI: 0
   camTarget: {fileID: 0}
+  isMouseOverUI: 0
 --- !u!1 &1739827294
 GameObject:
   m_ObjectHideFlags: 0
@@ -1483,6 +1483,7 @@ MonoBehaviour:
     type: 3}
   CurrentTurnFollowerYOffset: 0.2
   cam: {fileID: 1739827295}
+  _selector: {fileID: 1379192919}
   validMoveTemplate: {fileID: 9197481963319205126, guid: c5ba8612512c55e4b8e3cbd0a313d0cb,
     type: 3}
   _directiveManager: {fileID: 11400000, guid: 0908f2efcba82fe438c20f562da138bb, type: 2}
