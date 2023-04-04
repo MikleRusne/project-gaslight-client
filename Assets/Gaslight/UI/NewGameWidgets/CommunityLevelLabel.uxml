@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/Gaslight/UI/Styles/Main%20Menu/main_menu_styles.uss?fileID=7433441132597879392&amp;guid=209b44c6d4cb60d4d915447e1428c6ae&amp;type=3#main_menu_styles" />
+    <ui:VisualElement name="OuterContainer" style="background-color: rgba(0, 0, 0, 0); flex-grow: 2; flex-direction: row; max-height: none; height: 100%; font-size: 25px;">
+        <ui:VisualElement name="Thumbnail" style="background-color: rgba(0, 0, 0, 0); width: auto; height: auto; margin-top: 5%; margin-bottom: 5%; max-height: none; min-height: auto; align-items: flex-start; flex-direction: row; flex-grow: 1;" />
+        <ui:VisualElement name="LevelDetails" style="flex-grow: 2; max-height: 30%; color: rgb(241, 238, 201); -unity-font-style: normal; -unity-font: url(&apos;project://database/Assets/Gaslight/UI/fonts/Calistta%20Mentali.ttf?fileID=12800000&amp;guid=139aab0cd4f0b9646b6a05622255dc31&amp;type=3#Calistta Mentali&apos;); font-size: 16px; background-color: rgba(200, 200, 200, 0); border-top-left-radius: 1%; border-bottom-left-radius: 1%; border-top-right-radius: 1%; border-bottom-right-radius: 1%;">
+            <ui:Label tabindex="-1" text="Name" display-tooltip-when-elided="true" name="LevelID" style="width: 20%; height: 40%; flex-grow: 1; font-size: 24px;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/Gaslight/UI/Styles/Main%20Menu/main_menu_styles.uss?fileID=7433441132597879392&amp;guid=209b44c6d4cb60d4d915447e1428c6ae&amp;type=3#main_menu_styles" />
+    <ui:VisualElement name="OuterContainer" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); background-image: url(&apos;project://database/Assets/Gaslight/Textures/Pictures/backdrop.png?fileID=2800000&amp;guid=1aede0640fe1c784ab0f3f3e86916d52&amp;type=3#backdrop&apos;); -unity-font: url(&apos;project://database/Assets/Gaslight/UI/fonts/Calistta%20Mentali.ttf?fileID=12800000&amp;guid=139aab0cd4f0b9646b6a05622255dc31&amp;type=3#Calistta Mentali&apos;);">
+        <ui:VisualElement name="InnerContainer" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.54); width: 101%;">
+            <ui:VisualElement name="UnderConstruction" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); width: 39%; height: 46%; min-width: initial; min-height: initial; max-height: 27%; left: 32%; top: 48%;">
+                <ui:Label tabindex="-1" text="Under construction..." display-tooltip-when-elided="true" class="user-name" style="color: rgba(221, 179, 63, 0.65); font-size: 61px;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

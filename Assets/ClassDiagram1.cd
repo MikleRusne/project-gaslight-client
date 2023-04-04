@@ -1,0 +1,329 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Level">
+    <Position X="13" Y="5" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Enum Name="Level.ELinkDirection" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Assets\Gaslight\Level\Level.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AxwEkADEieoJ4BgAIVUIAiFMQBRrEIYhgACICABCBkA=</HashCode>
+      <FileName>Assets\Gaslight\Level\Level.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="AI.EnemyAI" Collapsed="true">
+    <Position X="7.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAwAAAQAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\Enemy\EnemyAI.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="AStar" Collapsed="true">
+    <Position X="5.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAUAQAAMQIAgACACCAAAAAAAIAQAEAACACAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\AStar.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="BlockScript" Collapsed="true">
+    <Position X="6.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\BlockScript.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="buttonCheck" Collapsed="true">
+    <Position X="8.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAA=</HashCode>
+      <FileName>Assets\buttonCheck.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CameraController" Collapsed="true">
+    <Position X="10.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAQADWAEQCAIElAgBAABAAgQEACQgBADgERAAAALAUA=</HashCode>
+      <FileName>Assets\Gaslight\Level\Camera\CameraController.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CharacterAsset" Collapsed="true">
+    <Position X="6.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Gaslight\Level\CharacterAssets\CharacterAsset.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CharacterAssetDB" Collapsed="true">
+    <Position X="8.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Gaslight\Level\CharacterAssets\CharacterAssetDB.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="DiscoverBlocks" Collapsed="true">
+    <Position X="5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQEAgEAACAgAAgEAAAADAAAAAAIAEAAAAAAAAABgAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Tiles\DiscoverBlocks.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FollowPlayer" Collapsed="true">
+    <Position X="6.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAUABAAIACAAABAAAAAAAAAEAAAAAAAAAAAAAQAAAAA=</HashCode>
+      <FileName>Assets\Murdle\FollowPlayer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Characters.CharacterStats" Collapsed="true">
+    <Position X="10.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAgAAAAAAAAAEAAAQAAAAAAABBBAAg=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\Character.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Characters.Character" Collapsed="true">
+    <Position X="5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACSAAAAAAGAAgAAAACACAAAQAAALAAAAAEAABAEAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\Character.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Characters.GOMovementComponent" Collapsed="true">
+    <Position X="2.5" Y="6.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAUJAgAiGDIAAAAAQACIAQAAAAAAABIQAAgADAAAQCE=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\GOMovementComponent.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Characters.MovementComponent" Collapsed="true">
+    <Position X="2.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAACAAAAAAABAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\MovementComponent.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GameActions.DeliberateMoveDirective" Collapsed="true">
+    <Position X="2.75" Y="4" Width="1.5" />
+    <InheritanceLine Type="GameActions.Directive" FixedFromPoint="true">
+      <Path>
+        <Point X="3.75" Y="1.75" />
+        <Point X="3.75" Y="1.375" />
+        <Point X="2.875" Y="1.375" />
+        <Point X="2.875" Y="3.625" />
+        <Point X="3.5" Y="3.625" />
+        <Point X="3.5" Y="4" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AgQAAAAAAEAAAAAAAAAAACACAAIAAACAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\GameActions\DeliberateMoveDirective.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GameActions.Directive" Collapsed="true">
+    <Position X="3.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAAIAAAACJWAAAAKBAAAAAAgACAAAAAAAEAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\GameActions\Directive.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GameActions.GameAction" Collapsed="true">
+    <Position X="14.25" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAAAAAAAAAAAAAYEAAAAAAAAAAAQAAAAAAAAAAkAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\GameActions\GameAction.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GameActions.MoveAction" Collapsed="true">
+    <Position X="14.25" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAACAiAAAAQEAAAAACAAAAAAAAAAAAAAAAkAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\GameActions\MoveAction.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GameActions.PathAndMoveToAction" Collapsed="true">
+    <Position X="16.5" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAAgAAAAQEAAAAACIAAAAAAAAAAAAAgAkAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\GameActions\PathAndMoveToAction.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GameActions.PathTo" Collapsed="true">
+    <Position X="12" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAAgAAAAQUAAAAACIAAAAAAAIAAAAAhAEAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\GameActions\PathTo.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="LevelEditorUITK" Collapsed="true">
+    <Position X="12.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AARIAAACACAACACACAAAAAAAMAIAAAAAAAAAAAAAAEA=</HashCode>
+      <FileName>Assets\Gaslight\Level\LevelEditor\LevelEditorUITK.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MainMenuScript" Collapsed="true">
+    <Position X="14.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AARwAAABgGAAAgAAgAEFABABAAAAEQAAACABAAAAAkA=</HashCode>
+      <FileName>Assets\MainMenuScript.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Orchestrator" Collapsed="true">
+    <Position X="18" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQBAAAAAKgAAAAAgAAAAAgAAAEAAgIAAACACUAwCFA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Level Admins\Orchestrator.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="OrchestratorInspector" Collapsed="true">
+    <Position X="17.25" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAEAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Inspectors\OrchestratorInspector.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PlayerCharacterController" Collapsed="true">
+    <Position X="17.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQAAAAAACAAAIAAAAAAAAAAAAAAAAAAAEAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\Player\PlayerCharacterController.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Priority_Queue.FastPriorityQueue&lt;T&gt;" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="26.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IABAABQQAQAAARQAAAAARAQAAAAABAAEAiAIAAFQCAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\FastPriorityQueue.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Priority_Queue.FastPriorityQueueNode" Collapsed="true">
+    <Position X="15" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAEAAAAAAAAQAAAEAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\FastPriorityQueueNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Priority_Queue.GenericPriorityQueue&lt;TItem, TPriority&gt;" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="28.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IABAABQQAQAAARQAAAAARBQAAgAABAAEAiAIAAFQAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\GenericPriorityQueue.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Priority_Queue.GenericPriorityQueueNode&lt;TPriority&gt;" Collapsed="true">
+    <Position X="26.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAAAAAAAAAAAAAEAAAAAAAAQAAAEAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\GenericPriorityQueueNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Priority_Queue.SimplePriorityQueue&lt;TItem, TPriority&gt;" Collapsed="true">
+    <Position X="24" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIBABCABAABBARUAEQQARAQAAAAABAAEAIAAAABQEAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\SimplePriorityQueue.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Priority_Queue.SimplePriorityQueue&lt;TItem&gt;" Collapsed="true">
+    <Position X="24" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\SimplePriorityQueue.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Priority_Queue.StablePriorityQueue&lt;T&gt;" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="28.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IABAABQQAQAAARQAAAAARAQAAgAABAAEAiAIAAFQAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\StablePriorityQueue.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="Priority_Queue.StablePriorityQueueNode" Collapsed="true">
+    <Position X="15" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\StablePriorityQueueNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="PropCharacter" Collapsed="true">
+    <Position X="21.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAgAKAAAAAAEA=</HashCode>
+      <FileName>Assets\Gaslight\Characters\Scripts\PropCharacter.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SelectUnderMouse" Collapsed="true">
+    <Position X="25.75" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAREAAAAACAABAAAACiAAAAAAAABAAAAAEAAAAAAAAA=</HashCode>
+      <FileName>Assets\Gaslight\Level\SelectUnderMouse.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="SimpleCharacter" Collapsed="true">
+    <Position X="21.5" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAQAIAAAAAAgAECAAAAAIQAAEAAiEKAQABAAGQ=</HashCode>
+      <FileName>Assets\Gaslight\Characters\Scripts\SimpleCharacter.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="Priority_Queue.IFixedSizePriorityQueue&lt;TItem, TPriority&gt;" Collapsed="true">
+    <Position X="18" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAIAAEAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\IFixedSizePriorityQueue.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Priority_Queue.IPriorityQueue&lt;TItem, TPriority&gt;" Collapsed="true">
+    <Position X="18" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAAAAAAAQQAAAAABAQAAAAABAAAAAAAAABQAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\AStarHelpers\IPriorityQueue.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="AI.EHostilityState" Collapsed="true">
+    <Position X="9.5" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAEAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\Enemy\EnemyAI.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="AI.EActionState" Collapsed="true">
+    <Position X="7.75" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAAABAAAAAAAAAAAABAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\Enemy\EnemyAI.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="EFaction" Collapsed="true">
+    <Position X="6.75" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAgAAAAAAAAAAAgAAAAAAAAAAIAAAAAAAAQAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\Character.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Characters.ECharacterMovementState" Collapsed="true">
+    <Position X="5" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAIAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\Character\Character.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="GameActions.EDirectiveType" Collapsed="true">
+    <Position X="19" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Assets\Murdle\Scripts\GameActions\Directive.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

@@ -1,0 +1,174 @@
+{
+    "name": "CameraSelection",
+    "maps": [
+        {
+            "name": "Level Editor",
+            "id": "09dd52f4-80b5-4aea-9e34-cea0373be7cd",
+            "actions": [
+                {
+                    "name": "ToggleSlideout",
+                    "type": "Button",
+                    "id": "253b8b0d-2100-4a56-9548-c2c4334d140e",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "94e50fc4-a1fd-460d-8003-2fa6efb27ad5",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleSlideout",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Level Navigation",
+            "id": "9bebf122-3147-4a9c-a328-831122abcf50",
+            "actions": [
+                {
+                    "name": "Select",
+                    "type": "Button",
+                    "id": "8ef17848-96c4-401f-a80f-610e94f22c9d",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "Press",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleOrtho",
+                    "type": "Button",
+                    "id": "94afa57c-4352-4896-b6ad-8ee44fab282d",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Navigate",
+                    "type": "Value",
+                    "id": "605469f7-8205-43c4-b4dc-f1d3a5f8d0d6",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "27ae39f5-5a15-4a60-8415-c731ae0cf45b",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Select",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8e22d1fc-4e15-48e9-9625-839ed6a08a41",
+                    "path": "<Keyboard>/z",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleOrtho",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "2D Vector",
+                    "id": "a534ea90-ff2f-426b-a072-36da3cd9e20d",
+                    "path": "2DVector",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Navigate",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "up",
+                    "id": "03c51838-de9e-494e-b1d0-643c92c91e70",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Navigate",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "down",
+                    "id": "b894041b-b5a1-412d-808d-8748fb1639bc",
+                    "path": "<Keyboard>/s",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Navigate",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "left",
+                    "id": "fd9b9482-99c4-47ad-94dc-c7429dda734d",
+                    "path": "<Keyboard>/a",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Navigate",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "right",
+                    "id": "c7f3db23-9f26-43fa-a5a8-15728963bd03",
+                    "path": "<Keyboard>/d",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Navigate",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                }
+            ]
+        },
+        {
+            "name": "tests",
+            "id": "83e48086-6a0d-4a41-bf6d-74eaf324b029",
+            "actions": [
+                {
+                    "name": "act1",
+                    "type": "Button",
+                    "id": "1779aab9-c886-42c8-ab3b-c00be640794e",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "7551b94a-8efa-4486-a740-50e00396854a",
+                    "path": "<Keyboard>/h",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "act1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

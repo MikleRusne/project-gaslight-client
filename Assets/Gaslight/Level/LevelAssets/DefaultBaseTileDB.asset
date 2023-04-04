@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea5826238c1f4022a146536b8e7c0609, type: 3}
+  m_Name: DefaultBaseTileDB
+  m_EditorClassIdentifier: 
+  BaseTileAssets:
+  - Asset: {fileID: 919132149155446097, guid: 4380dbdd047966344be8e1247d7035b2, type: 3}
+    Key: floor
+    traversible: 1
+    heightOffset: 0
+    traversingCost: 0
+  - Asset: {fileID: 4108774832690162310, guid: 55b79cdaa64ab8d418eb1a352cc6c0cf, type: 3}
+    Key: wall
+    traversible: 0
+    heightOffset: 0
+    traversingCost: 0
+  - Asset: {fileID: 919132149155446097, guid: 968d5cfab87a7654c8e5937d6d705eb7, type: 3}
+    Key: wall90
+    traversible: 0
+    heightOffset: 0
+    traversingCost: 0
+  - Asset: {fileID: 919132149155446097, guid: af05e832ee0d5f74aa25750774bbf968, type: 3}
+    Key: corner
+    traversible: 0
+    heightOffset: 0
+    traversingCost: 0
+  - Asset: {fileID: 919132149155446097, guid: af05e832ee0d5f74aa25750774bbf968, type: 3}
+    Key: corner9
+    traversible: 0
+    heightOffset: 0
+    traversingCost: 0
