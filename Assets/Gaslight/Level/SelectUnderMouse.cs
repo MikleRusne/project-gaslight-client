@@ -30,9 +30,21 @@ public class SelectUnderMouse : MonoBehaviour
 
     private bool tileSelected = false;
 
+    private bool isMouseOverTile => !(isMouseOverUI && highlightedTileIndex == null);
     public void ConfirmSelection()
     {
-        tileSelected = true;
+        if (isMouseOverTile)
+        { 
+            tileSelected = true;
+        }
+    }
+
+    public void DehighlightTile(int? location)
+    {
+        if (location != null)
+        {
+            Level.instance.TileDisplays[location.Value].setState(TileDisplay.State.Idle);
+        }
     }
     //Does not modify the activation state of the tiledisplay gameobjects
     public async Task<int?> SelectTile(Predicate<Tile> predicate)
@@ -41,18 +53,21 @@ public class SelectUnderMouse : MonoBehaviour
         highlightedTileIndex = null;
         RaycastHit hit;
         Ray ray;
-        while ( tileSelected==false || highlightedTileIndex==null)
+        Level.instance.ChangeTileDisplayStateWithPredicate((Tile tile)=>predicate(tile), true);
+        while (tileSelected==false)
         {
             CheckMouseOverUI();
             if (isMouseOverUI)
             {
+                DehighlightTile(highlightedTileIndex);
+                highlightedTileIndex = null;
                 await Task.Yield();
             }
             ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (!Physics.Raycast(ray, out hit))
             {
-                // Debug.LogError("Raycast hit nothing");
-                // tileSelected = false;
+                DehighlightTile(highlightedTileIndex);
+                highlightedTileIndex = null;
                 await Task.Yield();
                 continue;
             }
@@ -66,6 +81,8 @@ public class SelectUnderMouse : MonoBehaviour
             Transform objectHit = hit.transform;
             if (objectHit == null)
             {
+                DehighlightTile(highlightedTileIndex);
+                highlightedTileIndex = null;
                 Debug.LogWarning("hitObject null");
                 continue;
             }
@@ -76,14 +93,17 @@ public class SelectUnderMouse : MonoBehaviour
             {
                 if (!Level.instance.isLocationValid(newTileIndex))
                 {
-                    Debug.Log("Tile at "+ hitTileCoord.ToString() + " is invalid to be highlighted");
+                    // Debug.Log("Tile at "+ hitTileCoord.ToString() + " is invalid to be highlighted");
+
                     await Task.Yield();
                     continue;
                 }
 
                 if (!predicate(Level.instance.Tiles[newTileIndex]))
                 {
-                    Debug.Log("Tile fails predicate");
+                    DehighlightTile(highlightedTileIndex);
+                    highlightedTileIndex = null;
+                    // Debug.Log("Tile fails predicate");
                     await Task.Yield();
                     continue;
                 }
@@ -94,7 +114,7 @@ public class SelectUnderMouse : MonoBehaviour
                 highlightedTileIndex = newTileIndex;
                 Level.instance.TileDisplays[highlightedTileIndex.Value].setState(TileDisplay.State.Highlighted);
             }
-                   
+            
             await Task.Yield();
         }
         
@@ -103,13 +123,19 @@ public class SelectUnderMouse : MonoBehaviour
     }
     
     
+    
+    
     private void CheckMouseOverUI()
     {
-        isMouseOverUI = EventSystem.current.IsPointerOverGameObject();
-        if (isMouseOverUI)
+        if (EventSystem.current== null)
         {
-            Level.instance.DehighlightTile();
+            return;
         }
+        isMouseOverUI = EventSystem.current.IsPointerOverGameObject();
+        // if (isMouseOverUI)
+        // {
+        //     Level.instance.DehighlightTile();
+        // }
     }
 
     public void SelectHighlightedTile()
@@ -127,9 +153,7 @@ public class SelectUnderMouse : MonoBehaviour
         }
     }
 
-    void Start()
-    {
-    }
+    
     private void RaycastAndHighlight()
     {
         RaycastHit hit;

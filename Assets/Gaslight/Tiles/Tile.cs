@@ -58,9 +58,9 @@ namespace Tiles
             return this.y * Level.LWidth + this.x;
         }
 
-        public static int operator -(TileCoordinate a, TileCoordinate b) => Math.Abs(b.x - a.x) + Math.Abs(b.y - a.y);
+        public static TileCoordinate operator -(TileCoordinate a, TileCoordinate b) => TileCoordinate.xy(a.x - b.x,a.y - b.y);
+        public static int manhattan(TileCoordinate a, TileCoordinate b) => Math.Abs(b.x - a.x) + Math.Abs(b.y - a.y);
 
-        
     };
     
     
@@ -84,12 +84,12 @@ namespace Tiles
             };
             return temp;
         }
-        public void CharacterEnter(SimpleCharacter character)
+        public virtual void CharacterEnter(SimpleCharacter character)
         {
             
         }
 
-        public void CharacterExit(SimpleCharacter character)
+        public virtual void CharacterExit(SimpleCharacter character)
         {
             
         }

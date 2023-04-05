@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,12 +16,14 @@ namespace GameManagement{
         public DirectiveManager _directiveManager;
         public DirectiveIconManager _directiveIcon;
         public VisualElement _playerControllerUI;
-        public VisualElement _validMoves;
         public VisualTreeAsset _moveDisplayPrefab;
+        public DirectiveFactory _directiveFactory = new DirectiveFactory();
+        public VisualTreeAsset _playerCharacterIconTemplate;
         public PlayerController(DirectiveManager manager,
             DirectiveIconManager directiveIcon,
             VisualElement playerControllerUI,
             VisualTreeAsset moveDisplayPrefab,
+            VisualTreeAsset playerCharacterIconTemplate,
             SelectUnderMouse selector)
         {
             _directiveIcon = directiveIcon;
@@ -28,6 +31,7 @@ namespace GameManagement{
             _playerControllerUI = playerControllerUI;
             _moveDisplayPrefab = moveDisplayPrefab;
             _selector = selector;
+            this._playerCharacterIconTemplate = playerCharacterIconTemplate;
         }
 
         public bool acceptInput = false;
@@ -40,51 +44,192 @@ namespace GameManagement{
             }
         }
 
-        void PerformMove(SimpleCharacter character, String name)
+        private bool isPlayerChanged = true;
+        async Task PerformMove(SimpleCharacter character, String name)
         {
             Debug.Log("Performing " + name + " with " + character.name);
+            //Instantiate the directive with that name
+            var tempDirective = _directiveFactory.GetDirective(name);
+            tempDirective.Invoker = character;
+            //Ok so you can't await in a while loop. However, if you wrap it in an async, then you can await inside it
+            //So we do that
+            List<int> selectedTiles = new List<int>();
+                // Level.instance.TurnOnAllDisplays();
+            while (tempDirective.MoreConditions())
+            {
+                // Debug.Log("Waiting for tile selection");
+                var selectedTile = await _selector.SelectTile((Tile tile) =>
+                {
+                    return tempDirective.IsLocationValid(tile.tileKey);
+                });
+                // Debug.Log("Tile selected");
+                tempDirective.AddTarget(selectedTile.Value);
+                tempDirective.StepCondition();
+                selectedTiles.Add(selectedTile.Value);
+                Level.instance.TurnOffAllDisplays();
+            }
+            // Debug.Log("Selected tile "+ selectedTile);
+            // Debug.Log("Directive conditions fulfilled");
+            character.passiveDirective = tempDirective;
+            await character.passiveDirective.DoAction();
+            Level.instance.ChangeTileDisplaySelectionState(selectedTiles.ToArray(), TileDisplay.State.Idle);
+            Level.instance.ChangeTileDisplayActivationState(selectedTiles.ToArray(), false);
+        }
+
+        public int CalculateTurnAbleCharacters(List<SimpleCharacter> players)
+        {
+            return players
+                .Count((player) => player.actionPoints > 0);
+        }
+
+        public void HandlePlayerCharacterChangeButtonState(VisualElement ChangeCharacterButton,int validCharacterCount)
+        {
+            if (validCharacterCount > 1)
+            {
+                //Remove the class that greys it out
+                ChangeCharacterButton.RemoveFromClassList("no_other_characters");
+            }
+            else
+            {
+                if(! ChangeCharacterButton.ClassListContains("no_other_characters"))
+                ChangeCharacterButton.AddToClassList("no_other_characters");
+            }
+        }
+        int currentPlayerIndex = 0;
+
+        void SwitchPlayerCharacter(List<SimpleCharacter> players)
+        {
+            if (CalculateTurnAbleCharacters(players) < 2)
+            {
+                Debug.Log("Not changing character because no other valid characters.");
+                return;
+            }
+
+            int initial = currentPlayerIndex;
+            //Switch to the next player character that has at least one action point left
+            Debug.Log("Changing from "+ currentPlayerIndex + " to " + (currentPlayerIndex + 1) % players.Count);
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
+            while (players[currentPlayerIndex].actionPoints == 0 && currentPlayerIndex!=initial)
+            {
+                Debug.Log("Changing from "+ currentPlayerIndex + " to " + (currentPlayerIndex + 1) % players.Count);
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
+            }
+
+            if (currentPlayerIndex == initial)
+            {
+                Debug.Log("New character same as old one");
+                isPlayerChanged = false;
+                return;
+            }
+            Debug.Log("Changing current player to " + players[currentPlayerIndex].name);
+            isPlayerChanged = true;
         }
         public async Task Execute()
         {
+            isPlayerChanged = true;
             var players = Level.instance.GetCharactersOfFaction(EFaction.Player);
-            Level.instance.TurnOnAllDisplays();
-            var selectedTile = await _selector.SelectTile((Tile tile) =>
+            currentPlayerIndex = 0;
+            //We have a list of players
+            if (players.Count == 0)
             {
-                return true;
+                return;
+            }
+            //Initialize their action points
+            players.ForEach((player) =>
+            {
+                player.actionPoints = Mathf.RoundToInt(player.GetFloatTrait("max_action_points"));
             });
-            Debug.Log("Selected tile "+ selectedTile);
-            var currentPlayer = players[0];
-            var currentRoles = currentPlayer.roles;
-            var validMoves =currentRoles.Select((cr) => _directiveManager.GetValidDirectivesForRole(cr)).SelectMany(x=>x).ToList();
-            foreach (var validMove in validMoves)
-            {
-                Debug.Log(validMove);
-            }
 
-            validMoves.Add("test");
-            //Get the icons for each valid move and add it to the visual element
-            var validMovesContainer = _playerControllerUI.Q<VisualElement>("VALID_MOVES");
-            var validMoveButtons = validMoves.Select((move) =>
+            VisualElement CharacterIconsContainer = _playerControllerUI.Q("PLAYER_CHARACTER_ICONS_CONTAINER");
+            
+            //Get the UI button that changes characters
+            var ChangeCharacterButton = _playerControllerUI.Q("CHANGE_CHARACTER_BUTTON");
+            ChangeCharacterButton.RegisterCallback<ClickEvent>((evt) =>
             {
-                var newButton = _moveDisplayPrefab.Instantiate();
-                var icon= newButton.Q("Icon");
-                icon.style.backgroundImage = new StyleBackground(_directiveIcon.GetIcon(move));
-         
-                return newButton;
-            }).ToList();
-            validMovesContainer.Clear();
-            foreach (var validMoveButton in validMoveButtons)
+                SwitchPlayerCharacter(players);
+            });
+            if (ChangeCharacterButton == null)
             {
-                validMovesContainer.Add(validMoveButton);
+                Debug.LogError("Couldn't find CHANGE_CHARACTER_BUTTON");
             }
-            acceptInput = true;
-            block = true;
-            while (block)
+            
+            //Check how many characters have at least one action point
+            var validCharacterCount = CalculateTurnAbleCharacters(players);
+            HandlePlayerCharacterChangeButtonState(ChangeCharacterButton,validCharacterCount);
+            
+            //While at least one player has action points left, loop
+            while ((validCharacterCount = CalculateTurnAbleCharacters(players))>0)
             {
+                if (isPlayerChanged)
+                {
+                    var CharacterIconsList = players.Select((player, index) =>
+                    {
+                        var newIcon = _playerCharacterIconTemplate.Instantiate();
+                        newIcon.Q("CHARACTER_ICON").style.backgroundImage = new StyleBackground(player.icon);
+                        //Base class is already added
+                        
+                        //If character has some ap, add the available class
+                        if (player.actionPoints != 0)
+                        {
+                            newIcon.AddToClassList("character_icon_available");
+                        }
+                        
+                        //If it is the current character, add the final class
+                        if (index == currentPlayerIndex)
+                        {
+                            newIcon.AddToClassList("character_icon_selected");
+                        }
+                        newIcon.RegisterCallback<ClickEvent>(evt => ChangeCharacterTo(index));
+                        return newIcon;
+                    }).ToList();
+                    CharacterIconsContainer.Clear();
+                    CharacterIconsList.ForEach((icon) =>
+                    {
+                        CharacterIconsContainer.Add(icon);
+                    });
+                    Debug.Log("Recreating UI");
+                    //We have a player, initialize the UI
+                    var currentPlayer = players[currentPlayerIndex];
+                    var currentRoles = currentPlayer.roles;
+                    var validMoves =currentRoles.Select((cr) => _directiveManager.GetValidDirectivesForRole(cr)).SelectMany(x=>x).ToList();
+                    
+                    //Get the icons for each valid move and add it to the visual element
+                    var validMovesContainer = _playerControllerUI.Q<VisualElement>("VALID_MOVES");
+                    var validMoveButtons = validMoves.Select((move) =>
+                    {
+                        var newButton = _moveDisplayPrefab.Instantiate();
+                        var icon= newButton.Q("Icon");
+                        
+                        icon.style.backgroundImage = new StyleBackground(_directiveIcon.GetIcon(move));
+                        newButton.RegisterCallback<ClickEvent>(async (evt) =>
+                        {
+                            //Debug log the name for now
+                            await PerformMove(currentPlayer, move);
+                        });
+                        return newButton;
+                    }).ToList();
+                    validMovesContainer.Clear();
+                    foreach (var validMoveButton in validMoveButtons)
+                    {
+                        validMovesContainer.Add(validMoveButton);
+                    }
+                    isPlayerChanged = false;
+                }
+                HandlePlayerCharacterChangeButtonState(ChangeCharacterButton,validCharacterCount);
                 await Task.Yield();
             }
             Level.instance.TurnOffAllDisplays();
-            await (Task.Delay(2000));
+        }
+
+        private void ChangeCharacterTo(int index)
+        {
+            if (currentPlayerIndex == index)
+            {
+                return;
+            }
+
+            currentPlayerIndex = index;
+            isPlayerChanged = true;
         }
     }
 
@@ -150,8 +295,8 @@ public class OrchestratorWithControllers : MonoBehaviour
     public SelectUnderMouse _selector;
     public PlayerController playerController = default;
     public EnemyController enemyController = default;
-
     public VisualTreeAsset validMoveTemplate = default;
+    public VisualTreeAsset _playerCharacterIconTemplate = default;
     public DirectiveManager _directiveManager;
     public DirectiveIconManager _directiveIcon;
 
@@ -171,7 +316,7 @@ public class OrchestratorWithControllers : MonoBehaviour
         _enemyMovesUI = _uiDocument.rootVisualElement.Q("EnemyMovesContainer");
         _playerMovesUI = _uiDocument.rootVisualElement.Q("PlayerMovesContainer");
         _playerControllerUI = _uiDocument.rootVisualElement.Q("PLAYER_CONTROLLER");
-        playerController = new PlayerController(_directiveManager, _directiveIcon, _playerControllerUI, validMoveTemplate, _selector);
+        playerController = new PlayerController(_directiveManager, _directiveIcon, _playerControllerUI, validMoveTemplate, _playerCharacterIconTemplate,_selector);
         enemyController = new EnemyController(currentTurnFollowerPrefab, cam);
         HideEnemyTurnUI();
         HidePlayerTurnUI();

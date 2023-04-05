@@ -14,8 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp:Gaslight.Characters.Descriptors:Archetypes
   archetypes:
   - name: Dirk
+    roles: 0200000003000000
+    stringTraits: []
+    floatTraits:
+    - name: speed
+      value: 1
+    - name: max_action_points
+      value: 4
+  - name: Twitch
     roles: 02000000
     stringTraits: []
     floatTraits:
     - name: speed
       value: 1
+    - name: max_action_points
+      value: 4

@@ -393,7 +393,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 811190319}
-  m_LocalRotation: {x: 0.4331887, y: -0.000000017947901, z: 0.000000008626207, w: 0.90130323}
+  m_LocalRotation: {x: 0.43318874, y: 3.9955e-16, z: 1.3849232e-16, w: 0.90130323}
   m_LocalPosition: {x: 0, y: 10.5, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -907,7 +907,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1344344275}
-  m_LocalRotation: {x: 0.4331887, y: -0.000000017947901, z: 0.000000008626207, w: 0.90130323}
+  m_LocalRotation: {x: 0.43318874, y: 3.9955e-16, z: 1.3849232e-16, w: 0.90130323}
   m_LocalPosition: {x: 0, y: 10.5, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1236,6 +1236,7 @@ MonoBehaviour:
   CharacterLevelDescriptors:
   - index: 15
     name: agent 0
+    iconName: 
     baseCharacter: Actor
     faction: 1
     behavior: default
@@ -1246,20 +1247,37 @@ MonoBehaviour:
       value: 25
     - key: patrol_target_3
       value: 35
-  - index: 2
+    FloatTraitOverrides: []
+    StringTraitOverrides: []
+  - index: 39
     name: agent 2
+    iconName: default
     baseCharacter: Actor
     faction: 1
     behavior: default
     BehaviorTargets: []
+    FloatTraitOverrides: []
+    StringTraitOverrides: []
   - index: 25
     name: player agent 0
+    iconName: default
     baseCharacter: Actor
     faction: 0
     behavior: default
     BehaviorTargets: []
-  characterAssetDB: {fileID: 11400000, guid: 1300cc6d4f532444d9472dc04232b225, type: 2}
-  directiveManager: {fileID: 0}
+    FloatTraitOverrides: []
+    StringTraitOverrides: []
+  - index: 45
+    name: player agent 1
+    iconName: player_1
+    baseCharacter: Twitch
+    faction: 0
+    behavior: default
+    BehaviorTargets: []
+    FloatTraitOverrides: []
+    StringTraitOverrides: []
+  characterAssetDB: {fileID: 11400000, guid: df2d1379ae0f25d43bc8a8561d44bff2, type: 2}
+  characterIcons: {fileID: 11400000, guid: e376dfab5e18a7942bad0b5b9e3fe172, type: 2}
   Tiles: []
   LevelGenerated:
     m_PersistentCalls:
@@ -1485,6 +1503,8 @@ MonoBehaviour:
   cam: {fileID: 1739827295}
   _selector: {fileID: 1379192919}
   validMoveTemplate: {fileID: 9197481963319205126, guid: c5ba8612512c55e4b8e3cbd0a313d0cb,
+    type: 3}
+  _playerCharacterIconTemplate: {fileID: 9197481963319205126, guid: 06a9a723e0255724ab3063b15be3bd03,
     type: 3}
   _directiveManager: {fileID: 11400000, guid: 0908f2efcba82fe438c20f562da138bb, type: 2}
   _directiveIcon: {fileID: 11400000, guid: 846a24407b7bbd0458820455013dedcd, type: 2}

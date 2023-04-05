@@ -26,10 +26,13 @@ public struct CharacterLevelDescriptor
 {
     public int index;
     public string name;
+    public string iconName;
     public string baseCharacter;
     public EFaction faction;
     public string behavior;
     public BehaviorTarget[] BehaviorTargets;
+    public SimpleCharacter.NamedFloatTrait[] FloatTraitOverrides;
+    public SimpleCharacter.NamedStringTrait[] StringTraitOverrides;
 }
 
 public struct CharacterLevelDescriptorArray
@@ -72,7 +75,8 @@ public class Level : MonoBehaviour
     public static Level instance;
     public  static float Size = .9f;
     public float padding = .1f;
-    
+    //Defines how many tiles a character can move with respect to 1 point of speed
+    public static float SpeedToTileMovementFactor = 4.0f;
 
     private GameObject[] _tile3DObjectsBase = new GameObject[] { };
     private List<GameObject>[] _tile3DObjectsDeco = new List<GameObject>[] { };
@@ -91,8 +95,7 @@ public class Level : MonoBehaviour
     [SerializeField]
     private List<CharacterLevelDescriptor> CharacterLevelDescriptors = default;
     [SerializeField] private CharacterAssetDB characterAssetDB = default;
-
-    [SerializeField] private DirectiveManager directiveManager = default;
+    [SerializeField] private CharacterIconDB characterIcons = default;
     [SerializeField]
     public Tile[] Tiles;
     //A dictionary will make this far easier
@@ -266,6 +269,7 @@ public class Level : MonoBehaviour
                     continue;
                 }
 
+                newCharacter.icon = characterIcons.GetIcon(cld.iconName);
                 newCharacter.transform.position = CoordToWorld(TileCoordinate.IndexToCoord(cld.index));
                 newCharacter.transform.rotation = Quaternion.identity;
                 newCharacter.transform.name = cld.name;
@@ -607,7 +611,25 @@ public class Level : MonoBehaviour
         }
     }
 
-    public void ChangeTileDisplayState(int[] locations, bool newState)
+    public void ChangeTileDisplayStateWithPredicate(Func<Tile, bool> pred, bool state)
+    {
+        foreach (var tileDisplay in TileDisplays)
+        {
+            if (pred(Tiles[tileDisplay.index]))
+            {
+                tileDisplay.gameObject.SetActive(state);
+            }
+        }
+    }
+
+    public void ChangeTileDisplaySelectionState(int[] locations, TileDisplay.State newState)
+    {
+        foreach (var location in locations)
+        {
+            TileDisplays[location].setState(newState);
+        }
+    }
+    public void ChangeTileDisplayActivationState(int[] locations, bool newState)
     {
         foreach (var location in locations)
         {
@@ -685,7 +707,7 @@ public class Level : MonoBehaviour
 
         public bool isAnyCharacterOnTile(int index)
         {
-            return GetTileOccupant(index)== null;
+            return GetTileOccupant(index)!= null;
         }
         public void SelectCharacter(int index)
         {
@@ -721,6 +743,7 @@ public class Level : MonoBehaviour
         return characters.Any(ch => ch.character.MyTile.tileKey == index);
     }
 
+    //Get the character on a provided tile index
     public SimpleCharacter GetTileOccupant(int index)
     {
         return characters.Find(ch => ch.character.MyTile.tileKey == index).character;
@@ -826,15 +849,25 @@ public class Level : MonoBehaviour
         return temp;
     }
 
-   
-        
-    
-    public int GetDistance(int a, int b)
+    public int ManhattanDistance(int a, int b)
     {
-        if(debugPathfinder)
-        Debug.Log("Distance between " + a + " and " + b + " is: " + (TileCoordinate.IndexToCoord(a ) -
-                                                                     TileCoordinate.IndexToCoord(b)));
-        return TileCoordinate.IndexToCoord(a) - TileCoordinate.IndexToCoord(b);
+        var aTileCoordinate = TileCoordinate.IndexToCoord(a);
+        var bTileCoordinate = TileCoordinate.IndexToCoord(b);
+        var distance = TileCoordinate.manhattan(aTileCoordinate,bTileCoordinate);
+        return distance;
+    }
+    
+    public int GetPathDistance(int a, int b, int maxTiles =0)
+    {
+        var path = FindPath(a, b, maxTiles);
+        if (path == null)
+        {
+            return Int32.MaxValue;
+        }
+        else
+        {
+            return path.Count;
+        }
     }
     
     public enum ELinkDirection

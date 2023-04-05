@@ -16,3 +16,6 @@ MonoBehaviour:
   - role: 2
     directives:
     - move
+  - role: 3
+    directives:
+    - attack

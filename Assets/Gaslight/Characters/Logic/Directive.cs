@@ -1,28 +1,30 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Gaslight.Characters;
-using UnityEditor.Compilation;
-using UnityEngine;
 using Debug = UnityEngine.Debug;
-using System.Reflection;
-using System.Text;
 using JetBrains.Annotations;
 using Assembly = System.Reflection.Assembly;
 
 namespace Gaslight.Characters.Logic
 {
+    
+    //TODO: Change this to a string based lookup, using enums will make it taxing for new developers
     [Serializable]
     public enum Roles
     {
         Role1,
         Role2,
-        BasicMovement
+        BasicMovement,
+        BasicAttack
     }
-    
+
+    [Serializable]
+    public enum DirectiveRequirement
+    {
+        Character,
+        Tile
+    }
 
     
     [Serializable]
@@ -34,9 +36,11 @@ public struct DirectiveTarget
 [Serializable]
 public abstract class GDirective
 {
-    public abstract bool IsLocationValid(SimpleCharacter invoker, int location);
+
+    public abstract void AddTarget(int location);
+    public abstract bool IsLocationValid(int location);
     public abstract void StepCondition();
-    public bool AllConditionsFulfillled;
+    public abstract bool MoreConditions();
     
     public abstract string Name {get;}
     public enum GDType
@@ -71,15 +75,46 @@ public abstract class GDirective
 
 public class MoveDirective : GDirective
 {
-    
-    public override bool IsLocationValid(SimpleCharacter invoker, int location)
+    private bool targetSet = false;
+    public override void AddTarget(int location)
     {
-        return true;
+        index = location;
+        targetSet = true;
+    }
+
+    public override bool IsLocationValid(int i)
+    {
+        if (i == Invoker.MyTile.tileKey)
+        {
+            return false;
+        }
+
+        if (Level.instance.isAnyCharacterOnTile(i))
+        {
+            return false;
+        }
+        //Get the manhattan distance between the character's tile and the target tile
+        var manhattan = Level.instance.ManhattanDistance(Invoker.MyTile.tileKey, i);
+        var speed = Invoker.isTrait("speed") ? Invoker.GetFloatTrait("speed"): 1.0f;
+        if (manhattan < speed * Level.SpeedToTileMovementFactor
+            // &&
+            // Level.instance.GetPathDistance(Invoker.MyTile.tileKey, i, Mathf.FloorToInt(speed * 2.0f)) !=
+            // Int32.MaxValue
+            )
+        {
+            return true;
+        }
+        return false;
     }
 
     public override void StepCondition()
     {
         
+    }
+
+    public override bool MoreConditions()
+    {
+        return !targetSet;
     }
 
     public override string Name => "move";
@@ -106,10 +141,61 @@ public class MoveDirective : GDirective
     
 }
 
+public class AttackDirective : GDirective
+{
+    public bool targetSet = false;
+    public int targetLocation;
+    public override bool MoreConditions()
+    {
+        return !targetSet;
+    }
+
+    public override string Name => "attack";
+    public override void AddTarget(int location)
+    {
+        targetLocation = location;
+        targetSet = true;
+    }
+
+    public override bool IsLocationValid(int location)
+    {
+        //Check if there is a character there
+        if (!Level.instance.isAnyCharacterOnTile(location))
+        {
+            return false;
+        }
+        var character = Level.instance.GetTileOccupant(location);
+        
+        if (character.faction != Invoker.faction)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public override void StepCondition()
+    {
+    }
+    public async override Task Initialize()
+    {
+        return;
+    }
+
+    public async override Task DoAction()
+    {
+        await Task.Yield();
+    }
+}
+
 [Serializable]
 public class ForegoDirective : GDirective
 {
-    public override bool IsLocationValid(SimpleCharacter invoker, int location)
+    public override void AddTarget(int location)
+    {
+        
+    }
+
+    public override bool IsLocationValid(int i)
     {
         return true;
     }
@@ -117,6 +203,11 @@ public class ForegoDirective : GDirective
     public override void StepCondition()
     {
         
+    }
+
+    public override bool MoreConditions()
+    {
+        return false;
     }
 
     public override string Name => "nothing";
@@ -132,22 +223,11 @@ public class ForegoDirective : GDirective
     }
 }
 
-    public static class GDirectiveFactory{
-        public static GDirective CreateDirective(string directiveType, (string key, string value)[] targets)
-        {
-            switch (directiveType)
-            {
-                default:
-                    throw new ArgumentException("Invalid directive type: " + directiveType);
-            }
-        }
-    }
-
-    public  class ReflectiveFactory
+public  class DirectiveFactory
     {
         private List<(string name, Type directive)> directivesByName;
 
-        public ReflectiveFactory()
+        public DirectiveFactory()
         {
             var directiveTypes = Assembly.GetAssembly(typeof(GDirective)).GetTypes()
                 .Where(someType=> someType.IsClass && (!someType.IsAbstract) && (someType.IsSubclassOf(typeof(GDirective))));

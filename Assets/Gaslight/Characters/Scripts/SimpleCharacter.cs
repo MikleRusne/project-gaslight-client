@@ -27,6 +27,7 @@ public abstract class SimpleCharacter : MonoBehaviour
 {
     public abstract MovementComponent movementComponent { get; }
     public List<Roles> roles= new List<Roles>();
+    public Sprite icon;
     [Serializable]
     public struct NamedFloatTrait{
         public string name;

@@ -40,7 +40,7 @@ public class AStar
         reset();
         // PathFound = false;
         var FirstNode = new Node(Level.instance.GetTileFromKey(Start), null,0,
-            Level.instance.GetDistance(Start, Target));
+            Level.instance.ManhattanDistance(Start, Target));
         
         Open.Enqueue(FirstNode);
         OpenPQueue.Enqueue(FirstNode, FirstNode.f);
@@ -159,7 +159,7 @@ public class AStar
                 OpenLocations.Add(targetnebber);
 
                 var newNode = new Node(Level.instance.GetTileFromKey(targetnebber), CurrentNode, CurrentNode.g+1, 
-                    Level.instance.GetDistance(targetnebber, Target), Level.instance.Tiles[targetnebber].traversingCost);
+                    Level.instance.ManhattanDistance(targetnebber, Target), Level.instance.Tiles[targetnebber].traversingCost);
                 OpenPQueue.Enqueue(newNode, newNode.f);
             }
             else

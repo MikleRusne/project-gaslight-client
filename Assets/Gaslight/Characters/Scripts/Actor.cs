@@ -26,7 +26,6 @@ namespace Gaslight.Characters
 
         public void Start()
         {
-            
             this.bt = this.behavior.bt;
         } 
 
