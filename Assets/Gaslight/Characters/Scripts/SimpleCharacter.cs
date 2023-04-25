@@ -4,15 +4,13 @@ using System.Collections.Generic;
 using Tiles;
 using UnityEngine;
 using System.Linq;
+using System.Threading.Tasks;
 using Behaviors;
 using Characters;
 using CleverCrow.Fluid.BTs.Trees;
-using GameActions;
 using Gaslight.Characters.Descriptors;
 using UnityEngine.Events;
 using Gaslight.Characters.Logic;
-using UnityEditor.Experimental.GraphView;
-using Object = System.Object;
 
 
 [Serializable]
@@ -33,6 +31,11 @@ public abstract class SimpleCharacter : MonoBehaviour
         public string name;
         public float value;
     }
+
+
+    public abstract Task Attack(int location);
+    public abstract Task MoveToTile(int index);
+
     [Serializable]
     public struct NamedStringTrait
     {
@@ -52,6 +55,7 @@ public abstract class SimpleCharacter : MonoBehaviour
     public List<NamedStringTrait> stringTraits = new List<NamedStringTrait>();
 
     public int actionPoints=0;
+    public float health=0;
     public EFaction faction = EFaction.Neutral; 
     protected void Awake()
     {
@@ -65,7 +69,8 @@ public abstract class SimpleCharacter : MonoBehaviour
         this.actionPoints = (int)GetFloatTrait("max ap");
     }
 
-    
+    public abstract void OnTileChangeSelf();
+    public abstract void OnCharacterTileChanged(int location, SimpleCharacter character);
 
     public void OnDestroy()
     {
@@ -97,6 +102,19 @@ public abstract class SimpleCharacter : MonoBehaviour
         ErrorOnDuplicateTraits(); 
     }
 
+    public void Start()
+    {
+        if (isTrait("max_health"))
+        {
+            this.health = GetFloatTrait("max_health");
+        }
+        else
+        {
+            this.health = 5;
+        }
+        Level.instance.CharacterChangedTile.AddListener(OnCharacterTileChanged);
+
+    }
     abstract public void OnTileSelected();
 
     abstract public void OnTileDeselected(int index);
@@ -218,4 +236,7 @@ public abstract class SimpleCharacter : MonoBehaviour
     [SerializeField] public Behavior behavior;
     public BehaviorTree bt;
 
+    public abstract void OnAttacked(SimpleCharacter other);
+    public abstract void OnAttack(SimpleCharacter other);
+    public abstract void Attack(SimpleCharacter target);
 }

@@ -40,6 +40,14 @@ namespace Tiles
         }
         public static TileCoordinate IndexToCoord(int i)
         {
+            if (Level.LWidth == 0)
+            {
+                Debug.LogError("LWidth 0");
+            }
+            if (Level.LHeight == 0)
+            {
+                Debug.LogError("LHeight 0");
+            }
             return new TileCoordinate()
             {
                 x = (i % Level.LWidth),
@@ -72,15 +80,14 @@ namespace Tiles
         // public bool traversible;
         public int traversingCost=0;
         public float heightOffset;
-        public string baseString;
-        public List<String> decoKeys = new List<String>();
+        public BaseTileDescriptor baseTileDescriptor;
+        public List<DecorationDescriptor> decorations = new List<DecorationDescriptor>();
         public TileDescriptor Descriptor()
         {
             var temp = new TileDescriptor()
             {
                 index = tileKey,
-                baseString = this.baseString,
-                decoStrings = decoKeys.ToArray()
+                baseTileDescriptor = this.baseTileDescriptor
             };
             return temp;
         }

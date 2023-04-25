@@ -20,7 +20,7 @@ MonoBehaviour:
     - name: speed
       value: 1
     - name: max_action_points
-      value: 4
+      value: 2
   - name: Twitch
     roles: 02000000
     stringTraits: []
@@ -28,4 +28,4 @@ MonoBehaviour:
     - name: speed
       value: 1
     - name: max_action_points
-      value: 4
+      value: 2

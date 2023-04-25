@@ -2,14 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Gaslight.Characters.Logic;
 using Tiles;
+using UnityEditor.Timeline.Actions;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
 namespace GameManagement{
+    [Serializable]
     public class PlayerController
     {
         public SelectUnderMouse _selector;
@@ -19,8 +24,11 @@ namespace GameManagement{
         public VisualTreeAsset _moveDisplayPrefab;
         public DirectiveFactory _directiveFactory = new DirectiveFactory();
         public VisualTreeAsset _playerCharacterIconTemplate;
+        public CancellationTokenSource directiveSelectCancel = new CancellationTokenSource();
+        public CameraController _cam;
         public PlayerController(DirectiveManager manager,
             DirectiveIconManager directiveIcon,
+            CameraController cam,
             VisualElement playerControllerUI,
             VisualTreeAsset moveDisplayPrefab,
             VisualTreeAsset playerCharacterIconTemplate,
@@ -31,55 +39,127 @@ namespace GameManagement{
             _playerControllerUI = playerControllerUI;
             _moveDisplayPrefab = moveDisplayPrefab;
             _selector = selector;
-            this._playerCharacterIconTemplate = playerCharacterIconTemplate;
+            _playerCharacterIconTemplate = playerCharacterIconTemplate;
+            _cam = cam;
         }
 
+        public void CancelDirective()
+        {
+            Debug.Log("Trying to cancel directive");
+            directiveSelectCancel.Cancel();
+        }
         public bool acceptInput = false;
         public bool block = false; 
-        public void AcceptInput()
+        [ContextMenu("Accept")]
+        public void AcceptInput(InputAction.CallbackContext ctx)
         {
-            if (acceptInput)
+            if (ctx.performed&& acceptInput)
             {
                 block = false;
             }
         }
 
         private bool isPlayerChanged = true;
-        async Task PerformMove(SimpleCharacter character, String name)
+        private bool requestPlayerChange = false;
+        public string currentlyExecutingMove = "";
+        private bool isMoveRequested = false;
+        private bool lockMoveSelection = false;
+        [FormerlySerializedAs("players")] public List<SimpleCharacter> _players;
+        async Task PerformMove(SimpleCharacter character, String name, CancellationToken ct)
         {
-            Debug.Log("Performing " + name + " with " + character.name);
+            CancellationTokenSource tileSelectionCTS = new CancellationTokenSource();
+            Debug.Log("Starting performance of " + name + " with " + character.name);
             //Instantiate the directive with that name
             var tempDirective = _directiveFactory.GetDirective(name);
+            
             tempDirective.Invoker = character;
             //Ok so you can't await in a while loop. However, if you wrap it in an async, then you can await inside it
             //So we do that
             List<int> selectedTiles = new List<int>();
-                // Level.instance.TurnOnAllDisplays();
+            ct.Register(() =>
+            {
+                Debug.Log("Cancelling directive whereever");
+                tileSelectionCTS.Cancel();
+            });
+            //Turn on the tile under the player and to selected to let them know
+            var playerInitialTile = character.MyTile.tileKey;
+            Level.instance.TurnOffAllDisplays();
+            Level.instance.ChangeTileDisplayActivationState(new int[]{playerInitialTile}, true);
+            Level.instance.ChangeTileDisplaySelectionState(new int[]{playerInitialTile}, TileDisplay.State.Selected);
             while (tempDirective.MoreConditions())
             {
-                // Debug.Log("Waiting for tile selection");
-                var selectedTile = await _selector.SelectTile((Tile tile) =>
-                {
-                    return tempDirective.IsLocationValid(tile.tileKey);
-                });
-                // Debug.Log("Tile selected");
-                tempDirective.AddTarget(selectedTile.Value);
-                tempDirective.StepCondition();
-                selectedTiles.Add(selectedTile.Value);
-                Level.instance.TurnOffAllDisplays();
+                tileSelectionCTS = new CancellationTokenSource();
+                
+                    Debug.Log("Waiting for tile selection");
+                    int? selectedTile=null;
+                    try
+                    {
+                        selectedTile =
+                            await _selector.SelectTile(
+                                (Tile tile) => { return tempDirective.IsLocationValid(tile.tileKey); },
+                                ct);
+
+                    }
+                    catch (OperationCanceledException e)
+                    {
+                        Debug.Log("No longer awaiting tile selection for " + name);
+                        Level.instance.TurnOffAllDisplays();
+                        // Level.instance.ChangeTileDisplayActivationState(new int[]{playerInitialTile}, false);
+                        Level.instance.ChangeTileDisplaySelectionState(new int[] { playerInitialTile },
+                        TileDisplay.State.Idle);
+                        // Level.instance.ChangeTileDisplaySelectionState(selectedTiles.ToArray(), TileDisplay.State.Idle);
+                        // Level.instance.ChangeTileDisplayActivationState(selectedTiles.ToArray(), false);
+                        ct.ThrowIfCancellationRequested();
+                        // Debug.Log("After exception");
+                    }
+
+                    Debug.Log("Tile selected");
+                    if (selectedTile == null)
+                    {
+                        Debug.Log("Selected tile null for " + name);
+                    }
+                    tempDirective.AddTarget(selectedTile.Value);
+                    tempDirective.StepCondition();
+                    selectedTiles.Add(selectedTile.Value);
+                    Level.instance.TurnOffAllDisplays();
+                
+                
             }
             // Debug.Log("Selected tile "+ selectedTile);
             // Debug.Log("Directive conditions fulfilled");
             character.passiveDirective = tempDirective;
+            Level.instance.ChangeTileDisplayActivationState(new int[]{playerInitialTile}, false);
+            Level.instance.ChangeTileDisplaySelectionState(new int[]{playerInitialTile}, TileDisplay.State.Idle);
+            lockMoveSelection = true;
+            Debug.Log("Performing " + name + " with " + character.name);
             await character.passiveDirective.DoAction();
             Level.instance.ChangeTileDisplaySelectionState(selectedTiles.ToArray(), TileDisplay.State.Idle);
             Level.instance.ChangeTileDisplayActivationState(selectedTiles.ToArray(), false);
+            
+
+            character.actionPoints -= tempDirective.actionPointCost;
+            if (character.actionPoints <= 0)
+            {
+                requestPlayerChange = true;
+            }
+
+            await Task.Delay(millisecondsDelay:1000);
+            lockMoveSelection = false;
         }
 
         public int CalculateTurnAbleCharacters(List<SimpleCharacter> players)
         {
-            return players
-                .Count((player) => player.actionPoints > 0);
+            int counter = 0;
+            foreach (var player in players)
+            {
+                // Debug.Log($"{player.name} has {player.actionPoints} points.");
+                if (player.actionPoints != 0)
+                { 
+                    counter += player.actionPoints;
+                }
+            }
+
+            return counter;
         }
 
         public void HandlePlayerCharacterChangeButtonState(VisualElement ChangeCharacterButton,int validCharacterCount)
@@ -107,27 +187,30 @@ namespace GameManagement{
 
             int initial = currentPlayerIndex;
             //Switch to the next player character that has at least one action point left
-            Debug.Log("Changing from "+ currentPlayerIndex + " to " + (currentPlayerIndex + 1) % players.Count);
+            // Debug.Log("Changing from "+ currentPlayerIndex + " to " + (currentPlayerIndex + 1) % players.Count);
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
             while (players[currentPlayerIndex].actionPoints == 0 && currentPlayerIndex!=initial)
             {
-                Debug.Log("Changing from "+ currentPlayerIndex + " to " + (currentPlayerIndex + 1) % players.Count);
+                // Debug.Log("Changing from "+ currentPlayerIndex + " to " + (currentPlayerIndex + 1) % players.Count);
                 currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
             }
 
             if (currentPlayerIndex == initial)
             {
-                Debug.Log("New character same as old one");
+                // Debug.Log("New character same as old one");
                 isPlayerChanged = false;
                 return;
             }
-            Debug.Log("Changing current player to " + players[currentPlayerIndex].name);
+            // Debug.Log("Changing current player to " + players[currentPlayerIndex].name);
             isPlayerChanged = true;
+            Level.instance.TurnOffAllDisplays();
+            directiveSelectCancel.Cancel();
         }
         public async Task Execute()
         {
             isPlayerChanged = true;
             var players = Level.instance.GetCharactersOfFaction(EFaction.Player);
+            this._players = this._players;
             currentPlayerIndex = 0;
             //We have a list of players
             if (players.Count == 0)
@@ -153,15 +236,28 @@ namespace GameManagement{
                 Debug.LogError("Couldn't find CHANGE_CHARACTER_BUTTON");
             }
             
+            //Button to give up the rest of your turn
+            var foregoButton = _playerControllerUI.Q("FOREGO_TURN");
+            foregoButton.RegisterCallback<ClickEvent>((evt) =>
+            {
+                players.ForEach((player) => player.actionPoints = 0);
+                isPlayerChanged = true;
+            });
+            
             //Check how many characters have at least one action point
             var validCharacterCount = CalculateTurnAbleCharacters(players);
             HandlePlayerCharacterChangeButtonState(ChangeCharacterButton,validCharacterCount);
-            
             //While at least one player has action points left, loop
             while ((validCharacterCount = CalculateTurnAbleCharacters(players))>0)
             {
+                if (requestPlayerChange)
+                {
+                    SwitchPlayerCharacter(players);
+                    requestPlayerChange = false;
+                }
                 if (isPlayerChanged)
                 {
+                    
                     var CharacterIconsList = players.Select((player, index) =>
                     {
                         var newIcon = _playerCharacterIconTemplate.Instantiate();
@@ -179,7 +275,11 @@ namespace GameManagement{
                         {
                             newIcon.AddToClassList("character_icon_selected");
                         }
-                        newIcon.RegisterCallback<ClickEvent>(evt => ChangeCharacterTo(index));
+                        newIcon.RegisterCallback<ClickEvent>((evt) =>
+                        {
+                            if(player.actionPoints!=0)
+                                ChangeCharacterTo(index);
+                        });
                         return newIcon;
                     }).ToList();
                     CharacterIconsContainer.Clear();
@@ -187,9 +287,12 @@ namespace GameManagement{
                     {
                         CharacterIconsContainer.Add(icon);
                     });
-                    Debug.Log("Recreating UI");
+                    // Debug.Log("Recreating UI");
                     //We have a player, initialize the UI
                     var currentPlayer = players[currentPlayerIndex];
+                    await _cam.LerpToTarget(currentPlayer.transform.position);
+                    _cam.SetFocusTarget(currentPlayer.transform);
+
                     var currentRoles = currentPlayer.roles;
                     var validMoves =currentRoles.Select((cr) => _directiveManager.GetValidDirectivesForRole(cr)).SelectMany(x=>x).ToList();
                     
@@ -203,8 +306,20 @@ namespace GameManagement{
                         icon.style.backgroundImage = new StyleBackground(_directiveIcon.GetIcon(move));
                         newButton.RegisterCallback<ClickEvent>(async (evt) =>
                         {
-                            //Debug log the name for now
-                            await PerformMove(currentPlayer, move);
+                            CancelDirective();
+                            // directiveSelectCancel.Dispose();
+                            directiveSelectCancel = new CancellationTokenSource();
+                            Debug.Log("Trying to perform "+ move + ". State of token: " + directiveSelectCancel.IsCancellationRequested);
+                            try
+                            {
+                                await Task.Delay(millisecondsDelay: 100);
+                                await PerformMove(currentPlayer, move, directiveSelectCancel.Token);
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                Debug.Log("Cancelled "+move);
+                            }
+                        
                         });
                         return newButton;
                     }).ToList();
@@ -219,6 +334,7 @@ namespace GameManagement{
                 await Task.Yield();
             }
             Level.instance.TurnOffAllDisplays();
+            _cam.Unfollow();
         }
 
         private void ChangeCharacterTo(int index)
@@ -227,7 +343,7 @@ namespace GameManagement{
             {
                 return;
             }
-
+            directiveSelectCancel.Cancel();
             currentPlayerIndex = index;
             isPlayerChanged = true;
         }
@@ -241,7 +357,7 @@ namespace GameManagement{
         public EnemyController(GameObject inp, CameraController cam)
         {
             this.cam = cam;
-            cam.follow = false;
+            cam._follow = false;
             CurrentTurnObjectPrefab = inp;
             CurrentTurnObject = GameObject.Instantiate(CurrentTurnObjectPrefab, Vector3.zero,
                 Quaternion.Euler(-90.0f, 0.0f, 0.0f)).GetComponent<CurrentTurnFollower>();
@@ -257,7 +373,7 @@ namespace GameManagement{
              // Debug.Log("Got enemies: "+ sb.ToString() );
              foreach (var enemy in enemies)
              {
-                 cam.follow = true;
+                 cam._follow = true;
                  await cam.Follow(enemy.transform);
                  CurrentTurnObject.gameObject.SetActive(true);
                  // CurrentTurnObject.enabled = true;
@@ -267,7 +383,7 @@ namespace GameManagement{
                  await enemy.passiveDirective.DoAction();
                 CurrentTurnObject.gameObject.SetActive(false);
                  // CurrentTurnObject.enabled = false;
-                 cam.follow = false;
+                 cam._follow = false;
                  await Task.Delay(millisecondsDelay: 100);
              }
              // Debug.Log("All directives complete");
@@ -291,7 +407,7 @@ public class OrchestratorWithControllers : MonoBehaviour
     public VisualElement _enemyMovesUI;
     public VisualElement _playerMovesUI;
     public VisualElement _playerControllerUI;
-    public CameraController cam = default;
+    public CameraController _cam = default;
     public SelectUnderMouse _selector;
     public PlayerController playerController = default;
     public EnemyController enemyController = default;
@@ -304,20 +420,23 @@ public class OrchestratorWithControllers : MonoBehaviour
     {
         CurrentTurnFollower.offset = new Vector3(0.0f, CurrentTurnFollowerYOffset, 0.0f);
     }
-    [ContextMenu("Accept")]
-    public void PlayerControllerInput()
-    {
-        playerController.AcceptInput();
-    }
     // public Dictionary<EFaction, List<GameAction>> QueuedActions = new Dictionary<EFaction, List<GameAction>>();
     public void Awake()
     {
         _uiDocument = this.GetComponent<UIDocument>();
+        if (_uiDocument == null)
+        {
+            Debug.LogError("_uiDocument null");
+        }
         _enemyMovesUI = _uiDocument.rootVisualElement.Q("EnemyMovesContainer");
         _playerMovesUI = _uiDocument.rootVisualElement.Q("PlayerMovesContainer");
+        if (_playerMovesUI == null)
+        {
+            Debug.LogError("_playerMovesUI null");
+        }
         _playerControllerUI = _uiDocument.rootVisualElement.Q("PLAYER_CONTROLLER");
-        playerController = new PlayerController(_directiveManager, _directiveIcon, _playerControllerUI, validMoveTemplate, _playerCharacterIconTemplate,_selector);
-        enemyController = new EnemyController(currentTurnFollowerPrefab, cam);
+        playerController = new PlayerController(_directiveManager, _directiveIcon,_cam, _playerControllerUI, validMoveTemplate, _playerCharacterIconTemplate,_selector);
+        enemyController = new EnemyController(currentTurnFollowerPrefab, _cam);
         HideEnemyTurnUI();
         HidePlayerTurnUI();
     }
@@ -332,9 +451,8 @@ public class OrchestratorWithControllers : MonoBehaviour
     //Add level ending functionality somewhere
     
     public UnityEvent LevelEnded;
-    
 
-   
+
     public async void TurnLoop()
     {
         if (playerTurn)
@@ -390,6 +508,20 @@ public class OrchestratorWithControllers : MonoBehaviour
         ShowEnemyTurnUI();
         await enemyController.Execute();
         HideEnemyTurnUI();
+    }
+
+    [ContextMenu("cancel directive")]
+    public void Cancel()
+    {
+        playerController.directiveSelectCancel.Cancel();
+    }
+    public void CancelDirective(InputAction.CallbackContext ctx)
+    {
+        if (ctx.performed)
+        {
+            Debug.Log("Trying to cancel directive");
+            playerController.directiveSelectCancel.Cancel();
+        }
     }
 }
 

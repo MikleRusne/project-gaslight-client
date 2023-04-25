@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Characters;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,6 +11,25 @@ public class PropCharacter : SimpleCharacter
 
 
     public override MovementComponent movementComponent { get; }
+    public override async Task Attack(int location)
+    {
+        await Task.Yield();
+    }
+
+    public override async Task MoveToTile(int index)
+    {
+        await Task.Yield();
+    }
+
+    public override void OnTileChangeSelf()
+    {
+        
+    }
+
+    public override void OnCharacterTileChanged(int location, SimpleCharacter character)
+    {
+        
+    }
 
     public override void OnTileSelected()
     {
@@ -68,4 +88,16 @@ public class PropCharacter : SimpleCharacter
         }
     }
 
+    public override void OnAttacked(SimpleCharacter other)
+    {
+        
+    }
+
+    public override void OnAttack(SimpleCharacter other)
+    {
+    }
+
+    public override void Attack(SimpleCharacter target)
+    {
+    }
 }

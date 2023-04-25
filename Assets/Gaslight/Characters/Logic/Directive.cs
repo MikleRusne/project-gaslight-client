@@ -36,7 +36,7 @@ public struct DirectiveTarget
 [Serializable]
 public abstract class GDirective
 {
-
+    public abstract int actionPointCost { get; }
     public abstract void AddTarget(int location);
     public abstract bool IsLocationValid(int location);
     public abstract void StepCondition();
@@ -76,6 +76,8 @@ public abstract class GDirective
 public class MoveDirective : GDirective
 {
     private bool targetSet = false;
+    public override int actionPointCost => 2;
+
     public override void AddTarget(int location)
     {
         index = location;
@@ -89,6 +91,10 @@ public class MoveDirective : GDirective
             return false;
         }
 
+        if (Level.instance.tileTraversible[i] == false)
+        {
+            return false;
+        }
         if (Level.instance.isAnyCharacterOnTile(i))
         {
             return false;
@@ -143,33 +149,109 @@ public class MoveDirective : GDirective
 
 public class AttackDirective : GDirective
 {
-    public bool targetSet = false;
-    public int targetLocation;
+    private bool attackTargetSet = false;
+    private int attackTarget;
+    private bool attackLocationSet = false;
+    private int attackLocation;
     public override bool MoreConditions()
     {
-        return !targetSet;
+        if (!attackTargetSet)
+        {
+            Debug.Log("Set attack target");
+            return true;
+        }
+        if (!attackLocationSet)
+        {
+            Debug.Log("Set attack location");
+            return true;
+        }
+        return false;
     }
 
     public override string Name => "attack";
+
+    public override int actionPointCost => 1;
+
     public override void AddTarget(int location)
     {
-        targetLocation = location;
-        targetSet = true;
+        if (!attackTargetSet)
+        {
+            attackTarget = location;
+            attackTargetSet = true;
+            return;
+        }
+
+        if (!attackLocationSet)
+        {
+            attackLocation = location;
+            attackLocationSet = true;
+        }
     }
 
     public override bool IsLocationValid(int location)
     {
-        //Check if there is a character there
-        if (!Level.instance.isAnyCharacterOnTile(location))
+        if (Invoker.MyTile.tileKey == location)
         {
             return false;
         }
-        var character = Level.instance.GetTileOccupant(location);
-        
-        if (character.faction != Invoker.faction)
+        var speed = Invoker.GetFloatTrait("speed");
+        //Choose a target to attack first
+        if (!attackTargetSet)
         {
+            //Firstly, check if that location can be gotten to
+            if (Level.instance.ManhattanDistance(Invoker.MyTile.tileKey, location) - 2 >
+                (speed * Level.SpeedToTileMovementFactor / 2)
+                ||
+                Level.instance.GetPathDistance(Invoker.MyTile.tileKey, location) - 2 >
+                (speed * Level.SpeedToTileMovementFactor / 2))
+            {
+                return false;
+            }
+            // Check if there is not a character there
+             if (!Level.instance.isAnyCharacterOnTile(location))
+             {
+                 return false;
+             }
+            // Check if the character has a different faction
+             var otherCharacter = Level.instance.GetCharacterOnTile(location);
+             if (otherCharacter.faction == Invoker.faction)
+             {
+                 return false;
+             }
+            //
             return true;
         }
+
+        if (!attackLocationSet)
+        {
+            //Check if that space has a character
+            if (Level.instance.isAnyCharacterOnTile(location))
+            {
+                return false;
+            }
+            //Check if the attack location can be reached from that location
+            if (Level.instance.ManhattanDistance(attackTarget, location) > 2)
+            {
+                return false;
+            }
+            if (Level.instance.GetPathDistance(attackTarget, location) > 2)
+            {
+                return false;
+            }
+            //Check if that location can be gotten to
+            if (Level.instance.ManhattanDistance(Invoker.MyTile.tileKey, location)>
+                (speed * Level.SpeedToTileMovementFactor / 2)
+                ||
+                Level.instance.GetPathDistance(Invoker.MyTile.tileKey, location) >
+                (speed * Level.SpeedToTileMovementFactor / 2))
+            {
+                return false;
+            }
+            
+            return true;
+        }
+        //In a what the fuck situation, log an error
+        Debug.LogError("Invalid situation in tile checker, called after conditions met");
         return false;
     }
 
@@ -183,6 +265,8 @@ public class AttackDirective : GDirective
 
     public async override Task DoAction()
     {
+        await Invoker.MoveToTile(attackLocation);
+        await Invoker.Attack(attackTarget);
         await Task.Yield();
     }
 }
@@ -190,6 +274,8 @@ public class AttackDirective : GDirective
 [Serializable]
 public class ForegoDirective : GDirective
 {
+    public override int actionPointCost => Invoker.actionPoints;
+
     public override void AddTarget(int location)
     {
         

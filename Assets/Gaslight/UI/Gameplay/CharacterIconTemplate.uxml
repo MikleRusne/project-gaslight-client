@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/Gaslight/UI/Gameplay/characterIconTemplate.uss?fileID=7433441132597879392&amp;guid=36b871ded424c8a478ec7c6783bb4427&amp;type=3#characterIconTemplate" />
+    <ui:VisualElement name="CHARACTER_ICON_CONTAINER" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);">
+        <ui:VisualElement name="CHARACTER_ICON" class="character_icon_base" />
+    </ui:VisualElement>
+</ui:UXML>

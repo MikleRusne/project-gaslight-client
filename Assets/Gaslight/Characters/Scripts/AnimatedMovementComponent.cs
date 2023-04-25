@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using Characters;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
+
 [RequireComponent(typeof(Animator))]
 public class AnimatedMovementComponent : MovementComponent 
 {
-    public Vector3 TargetPosition;
+    [FormerlySerializedAs("TargetPosition")] public Vector3 _TargetPosition;
 
     public Animator _animator;
 
@@ -32,9 +34,9 @@ public class AnimatedMovementComponent : MovementComponent
         
     }
     
-    public float AngleThreshold = 45;
+    [FormerlySerializedAs("AngleThreshold")] public float _AngleThreshold = 45;
     
-    async Task RotateToTarget()
+    public async Task RotateToTarget(Vector3 StartPosition, Vector3 TargetPosition, Quaternion StartRotation)
     {
         Quaternion TargetRotation = Quaternion.LookRotation(StartPosition - TargetPosition, Vector3.up);
         TargetRotation = Quaternion.Euler(0, TargetRotation.eulerAngles.y, 0);
@@ -50,12 +52,12 @@ public class AnimatedMovementComponent : MovementComponent
         float difference = Quaternion.Angle(StartRotation, TargetRotation);
        
 
-        if (angle <= AngleThreshold)
-        {
-            // Debug.Log("Angle too small");
-            transform.rotation = TargetRotation;
-            return;
-        }
+        // if (angle <= _AngleThreshold)
+        // {
+        //     // Debug.Log("Angle too small");
+        //     transform.rotation = TargetRotation;
+        //     return;
+        // }
 
         float step = 0;
         float FullSpeed = difference*RotationSpeed;
@@ -63,11 +65,11 @@ public class AnimatedMovementComponent : MovementComponent
         {
             factor += FullSpeed*Time.deltaTime;
             step += RotationSpeed*Time.deltaTime;
-            transform.rotation = Quaternion.RotateTowards(StartRotation, TargetRotation, factor);
+            transform.rotation = Quaternion.RotateTowards(_StartRotation, TargetRotation, factor);
             await Task.Yield();
         }
 
-        transform.LookAt(TargetPosition);
+        transform.LookAt(_TargetPosition);
 
     }
 
@@ -83,7 +85,7 @@ public class AnimatedMovementComponent : MovementComponent
             if (stop)
             {
                 float value = StopMovementCurve.Evaluate(mytime/MovementDuration);
-                transform.position = Vector3.Lerp(StartPosition, TargetPosition, value);
+                transform.position = Vector3.Lerp(_StartPosition, _TargetPosition, value);
                 mytime += Time.deltaTime;
                 await Task.Yield();
             }
@@ -91,11 +93,11 @@ public class AnimatedMovementComponent : MovementComponent
             {
                 float value = RegularMovementCurve.Evaluate(mytime/MovementDuration);
                 mytime += Time.deltaTime;
-                transform.position = Vector3.Lerp(StartPosition, TargetPosition, value);
+                transform.position = Vector3.Lerp(_StartPosition, _TargetPosition, value);
                 await Task.Yield();
             }
         }
-        transform.position = TargetPosition;
+        transform.position = _TargetPosition;
         _animator.ResetTrigger("Walk");
         _animator.SetTrigger(StopWalkID);
     }
@@ -115,8 +117,8 @@ public class AnimatedMovementComponent : MovementComponent
             foreach (var index in path.Skip(1))
             {
                 // Debug.Log("Movement component: Moving to "+ index);
-                StartPosition = this.transform.position;
-                TargetPosition = Level.instance.CoordToWorld(index);
+                _StartPosition = this.transform.position;
+                _TargetPosition = Level.instance.CoordToWorld(index);
                 if (index == path.Count - 1)
                 {
                     await AsyncMove(true);
@@ -137,11 +139,11 @@ public class AnimatedMovementComponent : MovementComponent
 
     async Task AsyncMove(bool stop)
     {
-        await RotateToTarget();
+        await RotateToTarget(_StartPosition, _TargetPosition, _StartRotation);
         await MoveTarget(stop);
     }
 
-    public Quaternion StartRotation { get; set; }
-    public Vector3 StartPosition { get; set; }
+    public Quaternion _StartRotation { get; set; }
+    public Vector3 _StartPosition { get; set; }
 }
 

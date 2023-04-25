@@ -17,31 +17,19 @@ MonoBehaviour:
     Asset: {fileID: 919132149155446097, guid: 4380dbdd047966344be8e1247d7035b2, type: 3}
     Key: floor
     isBlocking: 0
+    tileHeightOffset: 0
   - levelAssetType: 0
     Asset: {fileID: 919132149155446097, guid: 21c01f1b37f7ee64d95765ab8b8c2dac, type: 3}
     Key: wall
     isBlocking: 1
+    tileHeightOffset: 0
   - levelAssetType: 0
-    Asset: {fileID: 8889027078771432498, guid: 54870c49de5c9324099e08fe8fcbecb8, type: 3}
-    Key: corner
+    Asset: {fileID: 919132149155446097, guid: 4380dbdd047966344be8e1247d7035b2, type: 3}
+    Key: block
     isBlocking: 1
-  - levelAssetType: 0
-    Asset: {fileID: 919132149155446097, guid: 429bd4e2b99cd67419af5df6574fdf3c, type: 3}
-    Key: corner90
-    isBlocking: 1
-  - levelAssetType: 0
-    Asset: {fileID: 919132149155446097, guid: 470ec8fa5e1a2b448b45a75a7189f814, type: 3}
-    Key: corner180
-    isBlocking: 1
-  - levelAssetType: 0
-    Asset: {fileID: 919132149155446097, guid: 968d5cfab87a7654c8e5937d6d705eb7, type: 3}
-    Key: wall90
-    isBlocking: 1
-  - levelAssetType: 0
-    Asset: {fileID: 919132149155446097, guid: 52668218f760a5e42a56327cd886a054, type: 3}
-    Key: corner27
-    isBlocking: 1
+    tileHeightOffset: 0
   - levelAssetType: 1
-    Asset: {fileID: 919132149155446097, guid: 52668218f760a5e42a56327cd886a054, type: 3}
-    Key: corner270
-    isBlocking: 1
+    Asset: {fileID: 5874098464085645703, guid: 4ad1c180abb8d674492a4bd3c5fa3175, type: 3}
+    Key: chandelier
+    isBlocking: 0
+    tileHeightOffset: 0

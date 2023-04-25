@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Characters;
 using UnityEditor;
+using UnityEditor.Timeline.Actions;
 using UnityEngine;
 [RequireComponent(typeof(Animator))]
 public class AnimatedListMovementComponent : MovementComponent 
@@ -106,6 +107,7 @@ public class AnimatedListMovementComponent : MovementComponent
                 StartPosition = this.transform.position;
                 TargetPosition = Level.instance.CoordToWorld(index);
                 await AsyncMove();
+                this.GetComponent<SimpleCharacter>().OnTileChangeSelf();
                 Level.instance.ChangeCharacterTile(this.transform.name, index);
             }
 

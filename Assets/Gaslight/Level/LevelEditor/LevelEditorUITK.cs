@@ -58,7 +58,7 @@ public class LevelEditorUITK : MonoBehaviour
     {
         Debug.Log("Fixing dropdown");
         var selectedTile = Level.instance.selectedTile;
-        SetBaseTile(selectedTile.baseString, Level.instance.GetValidBaseTileNames());
+        SetBaseTile(selectedTile.baseTileDescriptor.name, Level.instance.GetValidBaseTileNames());
         SetSelectedTileLabel(Level.instance.selectedTile.tileKey.ToString()); 
         
     }

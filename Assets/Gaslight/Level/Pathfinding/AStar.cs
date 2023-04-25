@@ -136,8 +136,9 @@ public class AStar
             }
             var targetnebber = Level.instance.DirectionOntoLocation(curTl.tileKey, direction);
             // Debug.Log("Index is "+ targetnebber);
-            if (Level.instance.IsTileOccupied(targetnebber))
+            if (targetnebber!= Target &&Level.instance.IsTileOccupied(targetnebber))
             {
+                
                 // Debug.Log("Neighbor is occupied");
                 continue;
             }

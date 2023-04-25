@@ -6,327 +6,267 @@ using UnityEngine;
 using Cinemachine;
 using UnityEditor.Search;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 public class CameraController : MonoBehaviour
 {
-    
-    [SerializeField] private CinemachineVirtualCamera _Cam = default;
-
-    [SerializeField] private float MoveSpeed = 1f;
     [SerializeField]private float EdgeThreshold = default;
-    [SerializeField] private float HeightMin; 
-    [SerializeField] private float HeightMax; 
-    [SerializeField]private float minFOV = 40f;
-    [SerializeField]private float maxFOV = 90f;
-    [SerializeField] private float zoomSpeed = 1f;
-    [SerializeField]public float SnapOrbitDeadZone;
-    private int SnapState;
-    public float TimeSinceLastSnap = 0f;
-    public float SnapDelay = default;
 
-    [SerializeField, Range(0.01f, 1f)] private float rotationSpeed = 1f;
     [SerializeField] public Transform player = default;
-    public bool follow = true;
-    private Vector2 previousMousePosition = Vector2.zero;
-    
+    [FormerlySerializedAs("follow")] public bool _follow = true;
+    public Vector2 previousMousePosition = Vector2.zero;
+
+    public Transform _camTransform = default;
+    public Vector2 _boundsStart;
+    public Vector2 _boundsEnd;
+
+    public float minDistance= default;
+    public float maxDistance= default;
+    public float currentDistance = default;
+
+    public float zoomSpeed = default;
+    public float zoomAmount = 0f;
+    [SerializeField] public bool _doZoom;
+
+    public void HandleZoom(InputAction.CallbackContext ctx)
+    {
+        float inputAmount = ctx.ReadValue<float>();
+        if (ctx.performed)
+        {
+            _doZoom = true;
+            zoomAmount = inputAmount * zoomSpeed;
+        }
+
+        if (ctx.canceled)
+        {
+            
+        }
+    }
+    void Awake()
+    {
+    }
     void Start()
     {
+        
+        previousMousePosition = Input.mousePosition;
+        this._boundsStart = Level.instance._boundsStart;
+        this._boundsEnd = Level.instance._boundsEnd;
+        if(player!=null){
+        
         this.transform.position = player.position;
         this.transform.rotation = player.rotation;
-        VCamDefaultZOffset = _Cam.GetCinemachineComponent<CinemachineTransposer>().m_FollowOffset.z;
+        }
+        // VCamDefaultZOffset = _Cam.GetCinemachineComponent<CinemachineTransposer>().m_FollowOffset.z;
+        newPosition = transform.position;
+        _doPan = false;
+        _newRotation = transform.rotation;
+        _doOrbit = false;
     }
 
     [Range(0.01f, 1.0f)] public float followTransitionDuration; 
-    public bool isInFollowTransition = false;
+    [FormerlySerializedAs("isInFollowTransition")] public bool _isInFollowTransition = false;
 
-    public async Task LerpToTarget()
+    public async Task LerpToTarget(Vector3 targetPosition)
     {
+        _isInFollowTransition = true;
         float myTime = 0f;
         while (myTime < followTransitionDuration)
         {
             float value = myTime / followTransitionDuration;
-            this.transform.position = Vector3.Lerp(this.transform.position, this.player.position, value);
+            this.transform.position = Vector3.Lerp(this.transform.position, targetPosition, value);
             myTime += Time.deltaTime;
             await Task.Yield();
         }
-        this.transform.position = this.player.position;
+        this.transform.position = targetPosition;
+        _isInFollowTransition = false;
     }
     public async Task Follow(Transform target)
     {
-        isInFollowTransition = true;
         this.player = target;
         //Lerp to that position in an async manner
-        await LerpToTarget();
-        isInFollowTransition = false;
+        await LerpToTarget(player.position);
+        _follow = true;
     }
 
+    public void Unfollow()
+    {
+        this.player = null;
+        _follow = false;
+    }
     public float followLerpDistanceThreshold = 0.2f;
-    // Update is called once per frame
-    Vector3 MoveDir;
-    private float VerticalMovement;
-    private float yRotateDir;
-    private float zRotateDir;
-    private float FOVDelta;
+    [Range(0,5)]public float _movementSpeed=10f;
+    public Vector3 newPosition;
+    [FormerlySerializedAs("_input")] public Vector2 _panInput;
+
+    
+    public bool _doPan = false;
+    public void HandlePanInput(InputAction.CallbackContext ctx)
+    {
+        _panInput = ctx.ReadValue<Vector2>();
+        
+        if (ctx.performed)
+        {
+            _doPan = true;
+        }
+
+        if (ctx.canceled)
+        {
+            _doPan = false;
+        }
+        
+
+    }
+
+    public bool _doOrbit = false;
+    public Vector2 _orbitInput;
+    [FormerlySerializedAs("newRotation")] public Quaternion _newRotation;
+    [Range(0f,30f)] public float _rotationSpeed = 1f;
+
+    public float camXRotation;
+    public float camXRotationMin = default;
+    public float camXRotationMax = default;
+    public void HandleOrbitInput(InputAction.CallbackContext ctx)
+    {
+        _orbitInput = ctx.ReadValue<Vector2>();
+        if (ctx.performed)
+        {
+            _doOrbit = true;
+        }
+
+        if (ctx.canceled)
+        {
+            _doOrbit = false;
+        }
+    }
+
+    public float _mouseOrbitSpeed = 1f;
+    public float _mouseOrbitDeadzone = 0.001f;
+    public Vector2 newMousePosition;
+    public void HandleMouseOrbit()
+    {
+        if (_doMouseOrbit)
+        {
+            newMousePosition = Input.mousePosition;
+            var displacement = newMousePosition - previousMousePosition;
+            var distance = displacement.sqrMagnitude;
+            //Get previous mouse position
+            if ( distance>_mouseOrbitDeadzone)
+            {
+                _doOrbit = true;
+                _orbitInput.x = displacement.x;
+            }
+            else
+            {
+                _doOrbit = false;
+                _orbitInput = Vector2.zero;
+            }
+            previousMousePosition = newMousePosition;
+            
+        }
+    }
+
+    public bool _doMouseOrbit = false;
+
+    public void HandleAllowOrbitInput(InputAction.CallbackContext ctx)
+    {
+        if (ctx.performed)
+        {
+            _doMouseOrbit = true;
+        }
+
+        if (ctx.canceled)
+        {
+            _doMouseOrbit = false;
+            _orbitInput = Vector2.zero;
+        }
+    }
+    void Orbit(Vector2 direction)
+    {
+        // camXRotation = _camTransform.rotation.x;
+        _newRotation *= Quaternion.Euler(Vector3.up * direction.x);
+        // _newRotation *= Quaternion.Euler(Vector3.right * direction.y);
+        // var newCamRotationX = camXRotation + direction.y;
+        // newCamRotationX = Mathf.Clamp(newCamRotationX, camXRotationMin, camXRotationMax);
+        // var newCamRotation = Quaternion.Euler(newCamRotationX,_camTransform.rotation.y, _camTransform.rotation.z);
+        // _camTransform.localRotation =
+            // Quaternion.Lerp(_camTransform.localRotation, newCamRotation, Time.deltaTime * _rotationSpeed);
+        transform.rotation = Quaternion.Lerp(transform.rotation, _newRotation, Time.deltaTime * _rotationSpeed);
+        _newRotation = transform.rotation;
+    }
     void Update()
     {
-        if (isInFollowTransition)
-        {
-            return;
-        }
-        if (follow)
-        {
-            this.transform.position = player.position;
-            return;
-        }
-        MoveDir = Vector3.zero;
-        yRotateDir = 0f;
-        VerticalMovement = 0f;
-        FOVDelta = 0f;
-        //Movement
-        HandleKBInput();
-        // HandleEdgeScroll();
-        HandlePan();
         
-        //Rotation
-        // HandleQEOrbit();
-        // HandleMouseOrbit();
-        // HandleMouseSnapOrbit();
-        MoveDir = MoveDir.normalized;
-        VerticalMovement *= Time.deltaTime * rotationSpeed;
-        var VerticalPosition = transform.position.y + VerticalMovement;
-        
-        var MovementVector = (transform.forward*MoveDir.z + transform.right * MoveDir.x) * (MoveSpeed * Time.deltaTime);
-        //XZ movement
-        transform.position += new Vector3(MovementVector.x,
-            VerticalPosition,
-            MovementVector.z);
-        
-        transform.position = new Vector3(transform.position.x, Mathf.Clamp(VerticalPosition, HeightMin, HeightMax), transform.position.z);
 
-        // yRotateDir *= rotationSpeed;
-        // transform.eulerAngles += new Vector3(0f, yRotateDir, 0f);
-        HandleScrollZoom();
-        
-        // ChangeFOV
-        FOVDelta *= zoomSpeed;
-        var newFOV = Mathf.Clamp(_Cam.m_Lens.FieldOfView+(FOVDelta* Time.deltaTime), minFOV, maxFOV) ;
-        // newFOV = Mathf.Lerp(_Cam.m_Lens.FieldOfView, newFOV, Time.deltaTime);
-        _Cam.m_Lens.FieldOfView = newFOV;
-        // Debug.Log(_Cam.m_Lens.FieldOfView);
-        HandleFocusOnPlayer();
-        
-        previousMousePosition = Input.mousePosition;
-        if (SnapState == 0)
+        if (!_isInFollowTransition)
         {
-            TimeSinceLastSnap += Time.deltaTime;
-        }else if (TimeSinceLastSnap > SnapDelay)
-        {
-            if (SnapState == 1)
+            if (_follow)
             {
-                transform.eulerAngles += new Vector3(0f, 15f, 0f);
+                this.transform.position = player.position;
             }
             else
             {
-                transform.eulerAngles += new Vector3(0f, -15f, 0f);
-            }
-            
-            TimeSinceLastSnap =0f;
-        }
-
-        HandleOrtho(Time.deltaTime);
-    }
-
-    private float VCamDefaultZOffset = default;
-    public void ToggleOrtho()
-    {
-        orthoView = !orthoView;
-    }
-
-    public void SetOrtho(bool targ)
-    {
-        orthoView = targ;
-    }
-    public bool orthoView = false;
-    [SerializeField,Range(0.001f,10f)] public float orthoToggleSpeed = 0.0f; 
-    void HandleOrtho(float deltaTime)
-    {
-        //If orthoview is true, then lerp the cinemachine follow z to 0
-        if (orthoView)
-        {
-            Vector3 curOffset = _Cam.GetCinemachineComponent<CinemachineTransposer>().m_FollowOffset;
-            float newZ = Mathf.Lerp(curOffset.z, 0, deltaTime*orthoToggleSpeed);
-            _Cam.GetCinemachineComponent<CinemachineTransposer>().m_FollowOffset =
-                new Vector3(curOffset.x, curOffset.y, newZ);
-        }
-        else
-        {
-            Vector3 curOffset = _Cam.GetCinemachineComponent<CinemachineTransposer>().m_FollowOffset;
-            float newZ = Mathf.Lerp(curOffset.z, VCamDefaultZOffset, deltaTime*orthoToggleSpeed);
-            _Cam.GetCinemachineComponent<CinemachineTransposer>().m_FollowOffset =
-                new Vector3(curOffset.x, curOffset.y, newZ);
-        }
-    }
-
-    private void HandleFocusOnPlayer()
-    {
-        if (Input.GetKeyDown(KeyCode.F))
-        {
-            transform.position = player.position;
-        }
-    }
-
-    private void HandleQEOrbit()
-    {
-        if (Input.GetKey(KeyCode.Q))
-        {
-            yRotateDir -= rotationSpeed ;
-        }
-        if (Input.GetKey(KeyCode.E))
-        {
-            yRotateDir += rotationSpeed;
-        }
-    }
-
-    private void HandleMouseSnapOrbit()
-    {
-        SnapState = 0;
-        if (Input.GetMouseButton(1))
-        {
-            var MousePositionDelta = previousMousePosition - (Vector2)Input.mousePosition;
-            //Use the y to orbit
-            // VerticalMovement = MousePositionDelta.y * MoveSpeed/2;
-            if (Mathf.Abs(MousePositionDelta.x) < SnapOrbitDeadZone)
-            {
-                Debug.Log("Ignored: " + MousePositionDelta.x);
-                SnapState = 0;
-            }
-            else
-            {
-                if (MousePositionDelta.x > 0)
+                if (_doMouseOrbit)
                 {
-                    SnapState = 1;
+                    HandleMouseOrbit();
                 }
-                else
+                if (_doPan)
                 {
-                    SnapState = -1;
+                    Pan(_panInput);
                 }
             }
-
         }
-    }
-
-
-    private void HandleMouseOrbit(){
-        if (Input.GetMouseButtonDown(2))
+        if (_doOrbit)
         {
-            previousMousePosition = Input.mousePosition;
+            Orbit(_orbitInput);
         }
-        // Debug.Log("Orbitin");
-        var MousePositionDelta = previousMousePosition - (Vector2)Input.mousePosition;
-        //Use the y to orbit
-        VerticalMovement = MousePositionDelta.y * MoveSpeed/2;
-        yRotateDir = MousePositionDelta.x * rotationSpeed;
-        previousMousePosition = Input.mousePosition;
+
+        if (_doZoom)
+        {
+            Zoom(zoomAmount);
+        }
     }
 
-    private bool panUp, panDown, panLeft, panRight = false;
-    void HandleKBInput()
+    private void Zoom(float f)
     {
-        if (panUp) MoveDir.z += 1f;
-        if (panDown) MoveDir.z -= 1f;
-        if (panLeft)
-        {
-            MoveDir.x -= 1f;
-            
-        }
-        if (panRight) MoveDir.x += 1f;
-    }
-
-    public void Pan(InputAction.CallbackContext ctx)
-    {
-        // Debug.Log("Panning");   
-        var delta = ctx.ReadValue<Vector2>();
-        var movementVector = new Vector3(delta.x, 0f, delta.y);
-        if (delta.x > 0.1)
-        {
-            panRight = true;
-            panLeft = false;
-            // Debug.Log("Panning right");
-        }
-        else if (delta.x<-0.1)
-        {
-            panLeft = true;
-            panRight = false;
-            // Debug.Log("Panning left");
-        }
-        else
-        {
-            panLeft = false;
-            panRight = false;
-        }
         
-        if (delta.y > 0.1)
-        {
-            panUp = true;
-            panDown = false;
-            // Debug.Log("Panning right");
-        }
-        else if (delta.y<-0.1)
-        {
-            panDown = true;
-            panUp = false;
-            // Debug.Log("Panning left");
-        }
-        else
-        {
-            panDown = false;
-            panUp = false;
-        }
     }
-    void HandleEdgeScroll()
+
+    void Pan(Vector2 direction)
     {
-        Vector2 MousePosition = Input.mousePosition;
-        if (MousePosition.x < EdgeThreshold)
-        {
-            MoveDir.x -= 1f;
-        }
 
-        if (MousePosition.x > (Screen.width - EdgeThreshold))
-        {
-            MoveDir.x += 1f;
-        }
-        
-        if (MousePosition.y < EdgeThreshold)
-        {
-            MoveDir.z -= 1f;
-        }
-
-        if (MousePosition.y > (Screen.height - EdgeThreshold))
-        {
-            MoveDir.z += 1f;
-        }
+        newPosition += transform.right * (direction.x * _movementSpeed);
+        newPosition += transform.forward * (direction.y * _movementSpeed);
+        transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * _movementSpeed);
+        transform.position = new Vector3(
+            Mathf.Clamp(transform.position.x, _boundsStart.x, _boundsEnd.x),
+            transform.position.y,
+            Mathf.Clamp(transform.position.z, _boundsStart.y, _boundsEnd.y)
+        );
+        newPosition = transform.position;
     }
 
-    void HandlePan()
+    public void SetFocusTarget(Transform target)
     {
-        if (Input.GetMouseButtonDown(1))
+        this.player = target;
+    }
+    
+    public void Refocus(InputAction.CallbackContext ctx)
+    {
+        if (ctx.canceled)
         {
-            previousMousePosition = Input.mousePosition;
+            if (player != null)
+            {
+                if (!_isInFollowTransition)
+                {
+                    LerpToTarget(player.position);
+                }
+            }
         }
-        if (!Input.GetMouseButton(1))
-        {
-            return;
-        }
-        var MousePositionDelta = previousMousePosition - (Vector2) Input.mousePosition;
-        previousMousePosition = (Vector2)Input.mousePosition;
-        MoveDir.x = MousePositionDelta.x;
-        MoveDir.z = MousePositionDelta.y;
     }
 
-    void HandleScrollZoom()
-    {
-        var mouseDelta = Input.mouseScrollDelta.y;
-        // Debug.Log(mouseDelta);
-        FOVDelta -= mouseDelta;
-    }
+
+
+
+
+
 }

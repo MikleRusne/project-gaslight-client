@@ -19,7 +19,7 @@
                     <ui:VisualElement name="PLAYER_CONTROLLER_PLACEHOLDER" picking-mode="Ignore" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0);" />
                     <ui:VisualElement picking-mode="Ignore" style="flex-grow: 0.2; background-color: rgba(0, 0, 0, 0); flex-direction: row; align-items: center; justify-content: center;">
                         <ui:VisualElement name="VisualElement" picking-mode="Ignore" style="flex-grow: 0; flex-shrink: 0; margin-left: 2%; margin-right: 2%;">
-                            <ui:VisualElement name="Forego" class="forego_button" />
+                            <ui:VisualElement name="FOREGO_TURN" class="forego_button" />
                         </ui:VisualElement>
                         <ui:VisualElement name="CHANGE_CHARACTER_BUTTON_CONTAINER" picking-mode="Ignore" style="flex-grow: 0; flex-shrink: 0; margin-left: 2%; margin-right: 2%;">
                             <ui:VisualElement name="CHANGE_CHARACTER_BUTTON" class="change_character_button no_other_characters forego_button" />

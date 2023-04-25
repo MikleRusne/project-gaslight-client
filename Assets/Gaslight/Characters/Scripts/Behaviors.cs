@@ -19,8 +19,15 @@ namespace Behaviors
         public string value;
     }
     [Serializable]
+    public struct BehaviorTargets
+    {
+        public List<BehaviorTarget> root;
+    }
+    [Serializable]
     public abstract class Behavior
     {
+        public abstract BehaviorTree GetBT();
+        public abstract void HandleCharacterTileChange(int location, SimpleCharacter otherCharacter);
         public List<BehaviorTarget> targets;
         public BehaviorTree bt;
         public SimpleCharacter Invoker;
@@ -87,6 +94,16 @@ namespace Behaviors
     }
     public class NoBehavior : Behavior
     {
+        public override BehaviorTree GetBT()
+        {
+            return null;
+        }
+
+        public override void HandleCharacterTileChange(int location, SimpleCharacter otherCharacter)
+        {
+            
+        }
+
         public override void Tick()
         {
             
@@ -138,6 +155,17 @@ namespace Behaviors
              .ToList();
          patrolStops = temp;
          }
+
+        public override BehaviorTree GetBT()
+        {
+            return bt;
+        }
+
+        public override void HandleCharacterTileChange(int location, SimpleCharacter otherCharacter)
+        {
+            Debug.Log("Handle character tile change called on " + Invoker.name);
+        }
+
         public override void Tick()
         {
             // Debug.Log("Calling tree tick");
@@ -159,11 +187,10 @@ namespace Behaviors
                 case "default_enemy_behavior":
                     var newBehavior = new DefaultEnemyBehavior(behaviorTargets);
                     return newBehavior;
-                    break;
+                    
                 default:
                     Debug.LogError("Behavior name " + name + " not found");
                     return null;
-                    break;
             }
         }
     }

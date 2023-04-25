@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Tiles;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
 
@@ -31,10 +33,15 @@ public class SelectUnderMouse : MonoBehaviour
     private bool tileSelected = false;
 
     private bool isMouseOverTile => !(isMouseOverUI && highlightedTileIndex == null);
-    public void ConfirmSelection()
+    // private bool firstConfirm = false;
+    bool IsMouseOverGameWindow { get { return !(0 > Input.mousePosition.x || 0 > Input.mousePosition.y || Screen.width < Input.mousePosition.x || Screen.height < Input.mousePosition.y); } }
+    [ContextMenu("Accept")]
+    public void ConfirmSelection(InputAction.CallbackContext ctx)
     {
-        if (isMouseOverTile)
-        { 
+        if (isInputRequested && ctx.performed && IsMouseOverGameWindow && isMouseOverTile && highlightedTileIndex!=null)
+        {
+            // firstConfirm = true;
+            Debug.Log("Confirming input");
             tileSelected = true;
         }
     }
@@ -46,16 +53,28 @@ public class SelectUnderMouse : MonoBehaviour
             Level.instance.TileDisplays[location.Value].setState(TileDisplay.State.Idle);
         }
     }
+
+    private bool isInputRequested = false;
     //Does not modify the activation state of the tiledisplay gameobjects
-    public async Task<int?> SelectTile(Predicate<Tile> predicate)
+    public async Task<int?> SelectTile(Predicate<Tile> predicate, CancellationToken cancellationToken)
     {
         tileSelected = false;
+        isInputRequested = true;
         highlightedTileIndex = null;
         RaycastHit hit;
         Ray ray;
         Level.instance.ChangeTileDisplayStateWithPredicate((Tile tile)=>predicate(tile), true);
+        Level.instance.ChangeTileSelectionColliderState((Tile tile)=>predicate(tile), true);
         while (tileSelected==false)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // Level.instance.TurnOffAllDisplays();
+                Debug.LogWarning("Cancelling tile select");
+                isInputRequested = false;
+                highlightedTileIndex = null;
+                cancellationToken.ThrowIfCancellationRequested();
+            }
             CheckMouseOverUI();
             if (isMouseOverUI)
             {
@@ -64,7 +83,8 @@ public class SelectUnderMouse : MonoBehaviour
                 await Task.Yield();
             }
             ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (!Physics.Raycast(ray, out hit))
+            Debug.DrawLine(ray.origin, ray.origin + ray.direction*500.0f, Color.blue);
+            if (!Physics.Raycast(ray, out hit, 400.0f, 1<<LayerMask.NameToLayer("Tiles")))
             {
                 DehighlightTile(highlightedTileIndex);
                 highlightedTileIndex = null;
@@ -79,6 +99,8 @@ public class SelectUnderMouse : MonoBehaviour
             }
         
             Transform objectHit = hit.transform;
+            var hitObjectName = objectHit.name;
+            Debug.Log(hitObjectName);
             if (objectHit == null)
             {
                 DehighlightTile(highlightedTileIndex);
@@ -117,8 +139,17 @@ public class SelectUnderMouse : MonoBehaviour
             
             await Task.Yield();
         }
-        
-        Level.instance.TileDisplays[highlightedTileIndex.Value].setState(TileDisplay.State.Selected);
+
+        isInputRequested = false;
+        if (highlightedTileIndex == null)
+        {
+            Debug.LogWarning("highlightedTileIndex null");
+        }
+        else
+        {
+            Level.instance.TileDisplays[highlightedTileIndex.Value].setState(TileDisplay.State.Selected);
+        }
+        Level.instance.TurnOffAllColliders();
         return highlightedTileIndex;
     }
     

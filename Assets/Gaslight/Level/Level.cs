@@ -2,17 +2,18 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Threading.Tasks;
 using Behaviors;
-using Gaslight.Characters.Descriptors;
+using Gaslight.Characters.Logic;
 using LevelCreation;
 using Tiles;
+using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Networking;
-using UnityEngine.Serialization;
-using Random = UnityEngine.Random;
-using Gaslight.Characters.Logic;
+using UnityEngine.SceneManagement;
+
 #region Character related Descriptors
 
 [Serializable]
@@ -30,7 +31,7 @@ public struct CharacterLevelDescriptor
     public string baseCharacter;
     public EFaction faction;
     public string behavior;
-    public BehaviorTarget[] BehaviorTargets;
+    public BehaviorTargets BehaviorTargets;
     public SimpleCharacter.NamedFloatTrait[] FloatTraitOverrides;
     public SimpleCharacter.NamedStringTrait[] StringTraitOverrides;
 }
@@ -42,6 +43,20 @@ public struct CharacterLevelDescriptorArray
 #endregion
 
 #region Level related Descriptors
+
+[Serializable]
+public struct BaseTileDescriptor
+{
+    public string name;
+    public float yRotation;
+}
+
+[Serializable]
+public struct DecorationDescriptor
+{
+    public string name;
+    public float yRotation;
+}
 [Serializable]
 public struct TileDescriptor
 {
@@ -51,8 +66,8 @@ public struct TileDescriptor
     //Need to sync with DB model, so it should.
     //Add a method to convert between tiles and their descriptors
     public int index;
-    public string baseString;
-    public string[] decoStrings;
+    public BaseTileDescriptor baseTileDescriptor;
+    public DecorationDescriptor[] decorations;
 }
 
 
@@ -68,22 +83,38 @@ public struct LevelDescriptor
     public RowDescriptor[] rows;
 }
 #endregion
-[RequireComponent(typeof(BoxCollider))]
+
+[Serializable]
+public struct RuntimeLevelCharDescriptor
+{
+    public string name;
+    public SimpleCharacter character;
+
+    public RuntimeLevelCharDescriptor(string name, SimpleCharacter character)
+    {
+        this.name = name;
+        this.character = character;
+    }
+}
+[RequireComponent(typeof(BoxCollider)), ExecuteInEditMode]
 public class Level : MonoBehaviour
 {
     #region Level specific init-ers
+
+    public bool _levelGenerated = false;
     public static Level instance;
     public  static float Size = .9f;
     public float padding = .1f;
     //Defines how many tiles a character can move with respect to 1 point of speed
     public static float SpeedToTileMovementFactor = 4.0f;
 
-    private GameObject[] _tile3DObjectsBase = new GameObject[] { };
-    private List<GameObject>[] _tile3DObjectsDeco = new List<GameObject>[] { };
+    public  GameObject[] _tile3DObjectsBase = new GameObject[] { };
+    public List<GameObject>[] _tile3DObjectsDeco = new List<GameObject>[] { };
     
     public bool[] tileTraversible = new bool[] { };
     public GameObject TileDisplayPrefab = default;
     public TileDisplay[] TileDisplays;
+    public BoxCollider[] _tileDisplayColliders;
 
     public LevelDescriptor levelDescriptor = default;
     public bool getLevelDescriptorsFromPlayerPrefs = false;
@@ -101,7 +132,7 @@ public class Level : MonoBehaviour
     //A dictionary will make this far easier
     //However, we do not live in a world where unity serializes dicts
     [SerializeField]
-    public List<(string name, SimpleCharacter character)> characters;
+    public List<RuntimeLevelCharDescriptor> characters;
 
     void ErrorOnDuplicateCharacters()
     {
@@ -114,8 +145,8 @@ public class Level : MonoBehaviour
             Debug.LogWarning("Found duplicates " + String.Join(", ",duplicates.ToArray()));
         }
     }
-    private Vector2 _boundsStart;
-    private Vector2 _boundsEnd;
+    public Vector2 _boundsStart;
+    public Vector2 _boundsEnd;
     
     [HideInInspector]
     public static int LWidth, LHeight = 0;
@@ -125,7 +156,7 @@ public class Level : MonoBehaviour
     #endregion
     
     public String[] CellStringList; 
-    private void Awake()
+    private async Task Awake()
     {
         if (instance != null && instance != this) 
         { 
@@ -135,24 +166,24 @@ public class Level : MonoBehaviour
         {
             instance = this; 
         }
-        if (getLevelDescriptorsFromPlayerPrefs)
+
+        if (!_levelGenerated)
         {
-            LoadLevelDescriptorFromPlayerPrefs();
+            if (getLevelDescriptorsFromPlayerPrefs)
+            {
+                await LoadLevelDescriptorFromPlayerPrefs();
+            }
+
+            if (getCharacterDescriptorsFromPlayerPrefs)
+            {
+                await LoadCharacterDescriptorsFromPlayerPrefs();
+            }
+            
+            await CreateLevel();
         }
-        
-        CalculateDimensions();
-        InitLists();
-        
+
     }
 
-    private void OnValidate()
-    {
-        if (started)
-        {
-            Regenerate();
-            SetBoxCollider();
-        }
-    }
     private IEnumerator GetCharacters(string url)
         {
             using (var webRequest = UnityWebRequest.Get(url))
@@ -170,45 +201,55 @@ public class Level : MonoBehaviour
                     // Debug.Log("After trim" + webRequest.downloadHandler.text);
                     PlayerPrefs.SetString("characters", text);
                 }
-                
             };
         }
 
-    void Start()
+    void InitCharacters()
     {
-        // var tokenizedRows = levelString.Split(';');
-        
-        // FillTraversibleWithStrings(tokenizedRows);
-        // FillCellStringList(levelString);
-        DescriptorModeStart();
-        // pathFinder.gameLevel = this;
-        started = true;
-        CalculateBounds();
-        SetBoxCollider();
-
-        // Debug.Log(GetStrKernel(0, 0, 3, 3));
-        Regenerate();
-        
-        if (getCharacterDescriptorsFromPlayerPrefs)
+        if (Application.isPlaying)
         {
-            //Then get it from the playerprefs 
-            //For now just get characters
-            var CharacterDescriptorsJSON = PlayerPrefs.GetString("character", "");
-            if (CharacterDescriptorsJSON == "")
+            if (characters == null)
             {
-                Debug.LogWarning("Could not find saved characters in PlayerPrefs, loading from scene string");
+                Debug.LogError("Runtime character information null");
             }
-            var temp = JsonUtility.FromJson<CharacterLevelDescriptorArray>(CharacterDescriptorsJSON);
-            // Debug.Log(temp.root.Length);
-            CharacterLevelDescriptors= temp.root.ToList(); 
-        }
-        SetAndSpawnCharacters();
-        LevelGenerated.Invoke();
+            foreach (var cld in CharacterLevelDescriptors)
+            {
+                var requiredCharacter = characters.Find((charDescriptor => charDescriptor.character.name == cld.name)).character;
+                if (requiredCharacter == null)
+                {
+                    Debug.LogError("Could not find character " + cld.name + ". Characters are " + characters.Aggregate("", (s, descriptor) => s+ descriptor.name + ","));
+                    continue;
+                }
+                requiredCharacter.passiveDirective = new ForegoDirective();
+                requiredCharacter.behavior = BehaviorFactory.NewBehaviorByName("default_enemy_behavior",cld.BehaviorTargets.root);
+                requiredCharacter.behavior.Invoker = requiredCharacter;
+                requiredCharacter.behavior.Initialize();
+            }
+        }   
     }
 
-    public void LoadLevelDescriptorFromPlayerPrefs()
+    
+
+    async void Start()
     {
-        Debug.LogWarning("Loading from playerprefs");
+        if (Application.isPlaying)
+        {
+            await CalculateDimensions();
+            TurnOffAllColliders();
+            InitCharacters();
+            LevelGenerated.Invoke();
+        }
+    }
+
+    [ContextMenu("Load level descriptor from player prefs")]
+    public async void LoadFromDescriptors()
+    {
+        await LoadLevelDescriptorFromPlayerPrefs();
+        await LoadCharacterDescriptorsFromPlayerPrefs();
+    }
+    public Task LoadLevelDescriptorFromPlayerPrefs()
+    {
+        // Debug.LogWarning("Loading from playerprefs");
         var LevelDescriptorsJSON = PlayerPrefs.GetString("level", "");
         if (LevelDescriptorsJSON == "")
         {
@@ -218,7 +259,25 @@ public class Level : MonoBehaviour
         var temp = JsonUtility.FromJson<LevelDescriptor>(LevelDescriptorsJSON);
         // Debug.Log(temp.root.Length);
         levelDescriptor = temp;
+        return Task.CompletedTask;
     }
+    
+        
+    public Task LoadCharacterDescriptorsFromPlayerPrefs()
+    {
+        // Debug.LogWarning("Loading from playerprefs");
+        var CharacterDescriptorsJSON = PlayerPrefs.GetString("character", "");
+        if (CharacterDescriptorsJSON == "")
+        {
+            Debug.LogWarning("Could not find saved level in PlayerPrefs, loading from scene string");
+        }
+
+        var temp = JsonUtility.FromJson<CharacterLevelDescriptorArray>(CharacterDescriptorsJSON);
+        // Debug.Log(temp.root.Length);
+        CharacterLevelDescriptors = temp.root.ToList();
+        return Task.CompletedTask;
+    }
+
     [ContextMenu("Test")]
     public void PrintLevelToJSON()
     {
@@ -254,9 +313,9 @@ public class Level : MonoBehaviour
     }
     
     #region Spawning
-    private void SetAndSpawnCharacters()
+    private async Task SetAndSpawnCharacters()
     {
-        characters = new List<(string name, SimpleCharacter character)>();
+        characters = new List<RuntimeLevelCharDescriptor>();
         foreach (var cld in CharacterLevelDescriptors)
         {
             if (isLocationValid(cld.index))
@@ -273,26 +332,28 @@ public class Level : MonoBehaviour
                 newCharacter.transform.position = CoordToWorld(TileCoordinate.IndexToCoord(cld.index));
                 newCharacter.transform.rotation = Quaternion.identity;
                 newCharacter.transform.name = cld.name;
+                newCharacter.name = cld.name;
                 newCharacter.MyTile = Tiles[cld.index];
                 newCharacter.faction = cld.faction;
-                newCharacter.passiveDirective = new ForegoDirective();
-                newCharacter.behavior = BehaviorFactory.NewBehaviorByName("default_enemy_behavior",cld.BehaviorTargets.ToList());
-                newCharacter.behavior.Invoker = newCharacter;
-                newCharacter.behavior.Initialize();
-                characters.Add((cld.name, newCharacter.GetComponent<SimpleCharacter>()));
+                var levelCharDescriptor = new RuntimeLevelCharDescriptor();
+                levelCharDescriptor.name = cld.name;
+                levelCharDescriptor.character = newCharacter;
                 
+                characters.Add(levelCharDescriptor);
             }
             else
             {
                 Debug.Log(cld.index+ " is an invalid location");
             }
+
+            await Task.Yield();
         }
     }
 
-    private void CalculateDimensions()
+    private Task CalculateDimensions()
     {
-        LHeight = levelDescriptor.rows.Length;
-        LWidth = 0;
+        Level.LHeight = levelDescriptor.rows.Length;
+        Level.LWidth = 0;
         foreach (var row in levelDescriptor.rows)
         {
             //In a row
@@ -302,6 +363,10 @@ public class Level : MonoBehaviour
                 LWidth = row.tiles.Length;
             }
         }
+
+        width = LWidth;
+        height = LHeight;
+        return Task.CompletedTask;
     }
     #region vestige
     // private void CalculateDimensions(String input){
@@ -323,14 +388,15 @@ public class Level : MonoBehaviour
     #endregion
 
 
-   private void InitLists()
+   private Task InitLists()
     {
-        //Convert the level string to the matrix
         //Allocate memory
+        tileParents = new GameObject[LWidth * LHeight];
         tileTraversible = new bool[LWidth*LHeight];
         _tile3DObjectsBase = new GameObject[LWidth * LHeight];
         _tile3DObjectsDeco = new List<GameObject>[LWidth * LHeight];
         TileDisplays = new TileDisplay[LWidth * LHeight];
+        _tileDisplayColliders = new BoxCollider[LWidth*LHeight];
         for (var i = 0; i < LHeight; i++)
         {
             //Make them all empty
@@ -339,11 +405,18 @@ public class Level : MonoBehaviour
                 tileTraversible[i * LWidth + j] = false;
                 _tile3DObjectsBase[i * LWidth + j] = null;
                 _tile3DObjectsDeco[i * LWidth + j] = new List<GameObject>();
+                tileParents[i * LWidth + j] = new GameObject($"Tile{i * LWidth + j} {i},{j}");
+                tileParents[i * LWidth + j].transform.parent = this.transform;
+                tileParents[i * LWidth + j].isStatic = true;
             }
         }
+
+        return Task.CompletedTask;
     }
 
-   private void FillTraversibleWithDescriptor()
+   public GameObject[] tileParents { get; set; }
+
+   private Task FillTraversibleWithDescriptor()
    {
        for(int i=0; i<LHeight;++i)
        {
@@ -355,9 +428,9 @@ public class Level : MonoBehaviour
                BaseTileAsset curLA;
                //Traversible by default, turn false if you find at least a single blocking element
                tileTraversible[i * LWidth + j] = true;
-               if (!baseTileDB.GetFromList(TileDescriptor.baseString, out curLA))
+               if (!baseTileDB.GetFromList(TileDescriptor.baseTileDescriptor.name, out curLA))
                {
-                   Debug.LogError("Invalid LA name:_" + TileDescriptor.baseString 
+                   Debug.LogError("Invalid LA name:_" + TileDescriptor.baseTileDescriptor.name 
                                + "_Candidates are :_" + String.Join(",",baseTileDB.ValidCandidates()));
                    continue;
                }
@@ -370,6 +443,8 @@ public class Level : MonoBehaviour
                }
            }
        }
+
+       return Task.CompletedTask;
    }
     
     private void InitTileListsWithDescriptors()
@@ -386,15 +461,25 @@ public class Level : MonoBehaviour
 
                 //Set baseString of tile only on first iteration
                 bool baseStringSetFlag = false;
-                var tileDescriptor = levelDescriptor.rows[y].tiles[x];
-                newTile.baseString = tileDescriptor.baseString;
-                newTile.decoKeys = new();
-                if (tileDescriptor.decoStrings != null)
+                try
                 {
-                    newTile.decoKeys.AddRange(tileDescriptor.decoStrings);
-                }
-                Tiles[y * LWidth + x] = newTile;
+                    var tileDescriptor = levelDescriptor.rows[y].tiles[x];
+                    newTile.baseTileDescriptor = tileDescriptor.baseTileDescriptor;
+                    // newTile.decorations = tileDescriptor.decorations.ToList();
+                    if (tileDescriptor.decorations != null)
+                    {
+                        newTile.decorations.AddRange(tileDescriptor.decorations);
+                    }
 
+                    Tiles[y * LWidth + x] = newTile;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Could not access level descriptor y:{y}, x:{x}");
+                    Debug.Log($"Level descriptor total rows: {levelDescriptor.rows.Length}");
+                    Debug.Log($"Cells in that row: {levelDescriptor.rows[y].tiles.Length}");
+                }
+                
             }
         }
     }
@@ -437,29 +522,18 @@ public class Level : MonoBehaviour
     // }
     //
     #endregion
-    public void ToggleDisplays()
-    {
-        foreach (var tileDisplay in TileDisplays)
-        {
-            tileDisplay.enabled = !tileDisplay.enabled;
-        }
-    }
+    
     private void SpawnTileDisplayAt(int index)
     {
         TileDisplays[index] = GameObject.Instantiate(TileDisplayPrefab, 
             CoordToWorld(TileCoordinate.IndexToCoord(index))+ new Vector3(0f,.1f,0f),
             Quaternion.Euler(new Vector3(90f,0f,0f)), parent:this.transform).GetComponent<TileDisplay>();
+        TileDisplays[index].transform.name = $"Display {index}";
+        TileDisplays[index].transform.SetParent(tileParents[index].transform, true);
         TileDisplays[index].index = index;
     }
-    private void Regenerate()
-    {
-        if (Application.isPlaying)
-        {
-            CreateLevel();
-
-        }
-    }
-
+    
+    
     private bool started = false;
 
     private void CalculateBounds()
@@ -473,9 +547,9 @@ public class Level : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.blue;
-        Gizmos.DrawCube(new Vector3(_boundsStart.x, 0f, _boundsStart.y), Vector3.one*5f);
+        Gizmos.DrawCube(new Vector3(_boundsStart.x, 0f, _boundsStart.y), Vector3.one*0.5f);
         Gizmos.color = Color.green;
-        Gizmos.DrawCube(new Vector3(_boundsEnd.x, 0f, _boundsEnd.y), Vector3.one *5f);
+        Gizmos.DrawCube(new Vector3(_boundsEnd.x, 0f, _boundsEnd.y), Vector3.one *0.5f);
     }
 
     private void SetBoxCollider()
@@ -496,60 +570,142 @@ public class Level : MonoBehaviour
         var temp = TileCoordinate.IndexToCoord(index);
         return CoordToWorld(temp);
     }
-    
-    public void CreateLevel()
-    {
-        InitTileListsWithDescriptors();
 
+    public int currentBuildIndex = 0;
+    [ContextMenu("Create Level")]
+    public async Task CreateLevel()
+    {
+        DestroyChildren();
+        LoadFromDescriptors();
+        await CalculateDimensions();
+        await InitLists();
+        await FillTraversibleWithDescriptor();
+        
+        CalculateBounds();
+        SetBoxCollider();
+        InitTileListsWithDescriptors();
+        width = LWidth;
+        height = LHeight;
+        
         for (int y = 0; y < LHeight; ++y)
         {
             for (int x = 0; x < LWidth; ++x)
             {
-                RefreshTile(x, y);
-                SpawnTileDisplayAt(y*LWidth+x);
+                try
+                {
+                    RefreshTile(x, y);
+                    SpawnTileDisplayAt(y * LWidth + x);
+                    if (TileDisplays[y * LWidth + x]!=null)
+                    {
+                        _tileDisplayColliders[y * LWidth + x] =
+                            TileDisplays[y * LWidth + x].GetComponent<BoxCollider>();
+                    }
+                    else
+                    {
+                        Debug.LogError($"Tile display object at {y*LWidth+x} is null");
+                    }
+                    currentBuildIndex = y * LWidth + x;
+                    // Debug.Log("Building index " + currentBuildIndex);
+                }catch (Exception e)
+                {
+                    Debug.LogError($"Exception occurred at {y},{x}: {e}");
+                }
+
+
+            }
+                await Task.Yield();
+        }
+        Debug.Log("Level generation done");
+        await SetAndSpawnCharacters();
+        this.TurnOffAllDisplays();
+        _levelGenerated = true;
+        Lightmapping.BakeAsync();
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+    }
+    [ContextMenu("Destroy children")]
+    private void DestroyChildren()
+    {
+        if (tileParents != null)
+        {
+            foreach (var tileParent in tileParents)
+            {
+                if (tileParent == null)
+                {
+                    continue;
+                }
+                for (var i = tileParent.transform.childCount - 1; i >= 0; i--)
+                {
+                    DestroyImmediate(tileParent.transform.GetChild(i).gameObject);
+                }
+                DestroyImmediate(tileParent);
             }
         }
+
+        characters?.ForEach(descriptor =>
+        {
+            if (descriptor.character != null)
+            {
+                DestroyImmediate(descriptor.character.gameObject);
+            }
+        });
+        characters = null;
+        //Destroy all children objects
+        for (var i = this.transform.childCount - 1; i >= 0; i--)
+        {
+            DestroyImmediate(this.transform.GetChild(i).gameObject);
+        }
+
+        _levelGenerated = false;
     }
-    
+
 
     //Reads values from the Tile object present at x and y
     //Instantiates debug surface
     //Instantiates 3D models for base and deco
     public void RefreshTile(int x, int y)
     {
+        // try
+        // {
 
-        if (_tile3DObjectsDeco[y * LWidth + x]!=null)
-        {
-            foreach (var o in _tile3DObjectsDeco[y * LWidth + x])
-            {
-                GameObject.Destroy(o);
-            }
-        }
         if (_tile3DObjectsBase[y * LWidth + x]!=null)
         {
-            GameObject.Destroy(_tile3DObjectsBase[y*LWidth+x]);
+            Debug.Log($"Destroying base tile object at {y},{x}");
+            GameObject.DestroyImmediate(_tile3DObjectsBase[y*LWidth+x]);
         }
+            // if (_tile3DObjectsDeco[y * LWidth + x] != null)
+            // {
+            //     foreach (var o in _tile3DObjectsDeco[y * LWidth + x])
+            //     {
+            //         GameObject.Destroy(o);
+            //     }
+            // }
+
+        // }
+        // catch (Exception e)
+        // {
+        //     
+        //     Debug.LogError("x: " + x + " y: " + y + " index: " + (y * LWidth + x)+  " out of bounds");
+        // }
 
         var newCoord = TileCoordinate.xy(x, y);
         
         Vector3 squarePosition = CoordToWorld(newCoord);
         var tile = Tiles[y*LWidth+x];
         //Spawn base, code block to avoid scoping requiredLA
+        Transform baseTransform = null;
+        if (baseTileDB.GetFromList(tile.baseTileDescriptor.name, out BaseTileAsset requiredBaseTileAsset))
         {
-            if (baseTileDB.GetFromList(tile.baseString, out BaseTileAsset RequiredLA))
-            {
-                if(RequiredLA==null){
-                    Debug.Log("Base name "+ tile.baseString +" not found");
-                }
-                SpawnBaseAt(y, x, RequiredLA, squarePosition);
+            if(requiredBaseTileAsset==null){
+                Debug.LogError("Base name "+ tile.baseTileDescriptor.name +" not found");
             }
+            baseTransform= SpawnBaseAt(y, x, tile.baseTileDescriptor.yRotation, requiredBaseTileAsset, squarePosition);
         }
         {
-            foreach (var tileDecoKey in tile.decoKeys)
+            foreach (var decoration in tile.decorations)
             {
-                if (decoTileDB.GetFromList(tileDecoKey, out DecoTileAsset RequiredLA))
+                if (decoTileDB.GetFromList(decoration.name, out DecoTileAsset RequiredLA))
                 {
-                    SpawnDecoAt(y,x,RequiredLA, squarePosition);
+                    SpawnDecoAt(y,x,decoration.yRotation,RequiredLA, squarePosition, baseTransform);
                     break;       
                 }
             }
@@ -559,11 +715,12 @@ public class Level : MonoBehaviour
         
     }
 
-    private void SpawnBaseAt(int y, int x, BaseTileAsset RequiredLA, Vector3 squarePosition)
+    private Transform SpawnBaseAt(int y, int x, float yRotation, BaseTileAsset RequiredLA, Vector3 squarePosition)
     {
         Tiles[y * LWidth + x].heightOffset = RequiredLA.heightOffset;
         var newObj = GameObject.Instantiate(RequiredLA.Asset, squarePosition, Quaternion.identity);
-        newObj.transform.SetParent(transform, true);
+        newObj.transform.rotation = Quaternion.Euler(0.0f,yRotation, 0.0f);
+        newObj.transform.SetParent(tileParents[y*LWidth+x].transform, true);
         if (_tile3DObjectsBase[y * LWidth + x] != null)
         {
             GameObject.DestroyImmediate(_tile3DObjectsBase[y*LWidth+x]);
@@ -571,12 +728,14 @@ public class Level : MonoBehaviour
         {
             _tile3DObjectsBase[y * LWidth + x] = newObj;
         }
+        return newObj.transform;
     }
 
-    private void SpawnDecoAt(int y, int x, DecoTileAsset RequiredLA, Vector3 squarePosition)
+    private void SpawnDecoAt(int y, int x, float yRotation, DecoTileAsset RequiredLA, Vector3 squarePosition, Transform parent)
     {
         var newObj = GameObject.Instantiate(RequiredLA.Asset, squarePosition, Quaternion.identity);
-        newObj.transform.SetParent(transform, true);
+        newObj.transform.rotation = Quaternion.Euler(0.0f, yRotation, 0.0f);
+        newObj.transform.SetParent(parent, true);
         _tile3DObjectsDeco[y * LWidth + x].Add(newObj);
     }
 
@@ -595,11 +754,32 @@ public class Level : MonoBehaviour
 
     public void TurnOffAllDisplays()
     {
-        Debug.Log("Turning off displays");
+        // Debug.Log("Turning off displays");
 
         foreach (var tileDisplay in TileDisplays)
         {
             tileDisplay.gameObject.SetActive(false);
+        }
+    }
+    public void TurnOffAllColliders()
+    {
+        // Debug.Log("Turning off displays");
+
+        foreach (var tileCollider in _tileDisplayColliders)
+        {
+            if (tileCollider != null)
+            {
+                tileCollider.enabled = false;
+                
+            }
+        }
+    }
+    [ContextMenu("Toggle displays")]
+    public void ToggleDisplays()
+    {
+        foreach (var tileDisplay in TileDisplays)
+        {
+            tileDisplay.gameObject.SetActive(!tileDisplay.gameObject.activeInHierarchy);
         }
     }
     public void TurnOnAllDisplays()
@@ -621,7 +801,31 @@ public class Level : MonoBehaviour
             }
         }
     }
+    public void ChangeTileSelectionColliderState(Func<Tile, bool> pred, bool state)
+    {
+        for (int i = 0; i < Tiles.Length; i++)
+        {
+            if (pred(Tiles[i]) == true)
+            {
+                _tileDisplayColliders[i].enabled = state;
+            }
+        }
+    }
 
+    public void TurnOffSelectionColliderAt(int index)
+    {
+        if (isLocationValid(index))
+        {
+            _tileDisplayColliders[index].enabled = false;
+        }
+    }
+    public void TurnOnSelectionColliderAt(int index)
+    {
+        if (isLocationValid(index))
+        {
+            _tileDisplayColliders[index].enabled = true;
+        }
+    }
     public void ChangeTileDisplaySelectionState(int[] locations, TileDisplay.State newState)
     {
         foreach (var location in locations)
@@ -707,12 +911,12 @@ public class Level : MonoBehaviour
 
         public bool isAnyCharacterOnTile(int index)
         {
-            return GetTileOccupant(index)!= null;
+            return GetCharacterOnTile(index)!= null;
         }
         public void SelectCharacter(int index)
         {
             isACharacterSelected = true;
-            selectedCharacter = GetTileOccupant(index);
+            selectedCharacter = GetCharacterOnTile(index);
             selectedCharacter.Select();
             OnCharacterSelected?.Invoke();
         }
@@ -744,16 +948,18 @@ public class Level : MonoBehaviour
     }
 
     //Get the character on a provided tile index
-    public SimpleCharacter GetTileOccupant(int index)
+    //Get Character On tile
+    public SimpleCharacter GetCharacterOnTile(int index)
     {
         return characters.Find(ch => ch.character.MyTile.tileKey == index).character;
     }
-    
+    public UnityEvent<int, SimpleCharacter> CharacterChangedTile;
     public void ChangeCharacterTile(SimpleCharacter character, int newTileIndex)
     {
         character.MyTile.CharacterExit(character);
         character.MyTile = Tiles[newTileIndex];
         character.MyTile.CharacterEnter(character);
+        CharacterChangedTile.Invoke(newTileIndex, character);
     }
     public void ChangeCharacterTile(string charactername, int newTileIndex)
     {
@@ -783,12 +989,19 @@ public class Level : MonoBehaviour
     public UnityEvent<int> TileChanged;
     public void ChangeTileBase(int index, String newBase)
     {
-        Tiles[index].baseString = newBase;
+        Tiles[index].baseTileDescriptor.name = newBase;
         RefreshTile(index%LWidth, index/LWidth);
         TileChanged.Invoke(index);
         TileDisplays[index].RefreshDisplay();
     }
 
+    public void ChangeTileRotation(int index, float newY)
+    {
+        Tiles[index].baseTileDescriptor.yRotation = newY;
+        RefreshTile(index%LWidth, index/LWidth);
+        TileChanged.Invoke(index);
+        TileDisplays[index].RefreshDisplay();
+    }
     private TileDisplay highlightedTile = default;
     public void HighlightTile(int index)
     {
@@ -830,7 +1043,9 @@ public class Level : MonoBehaviour
 
     public bool debugPathfinder = false;
     public AStar pathFinder = new AStar(){debug = false};
-    
+    [SerializeField] private int height;
+    [SerializeField] private int width;
+
     public List<int> Get4NeighboringTiles(int index)
     {
         List<int> temp= new List<int>();
@@ -958,7 +1173,7 @@ public class Level : MonoBehaviour
         pathFinder.FindPath(start, end);
         if (pathFinder.PathFound == false)
         {
-            Debug.Log("No valid path");
+            // Debug.Log("No valid path");
             return null;
         }
         return pathFinder.PathLocs.Take(maxTiles).ToList();

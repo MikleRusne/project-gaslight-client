@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31bbb65a9e0de20409a27f33217997ae, type: 3}
+  m_Name: CharacterAssetDB
+  m_EditorClassIdentifier: Assembly-CSharp:LevelCreation:CharacterAssetDB
+  characterAssets:
+  - name: Dirk_with_sword
+    Base: {fileID: 7968640857476763324, guid: 92a4082c8d12dcc4ebd80f6e6a467dc2, type: 3}
+    archetype: Dirk
+  - name: Twitch
+    Base: {fileID: 7968640857476763324, guid: 92a4082c8d12dcc4ebd80f6e6a467dc2, type: 3}
+    archetype: Twitch
+  - name: Enemy_1
+    Base: {fileID: 7968640857476763324, guid: 04e42f933c426b045a276ba04a53a796, type: 3}
+    archetype: Dirk
+  archetypes: {fileID: 11400000, guid: 6508865772a02ad449efce8fab6ae3b2, type: 2}

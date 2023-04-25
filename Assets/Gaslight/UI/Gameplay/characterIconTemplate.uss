@@ -1,0 +1,41 @@
+.character_icon_base {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0.24);
+    -unity-background-image-tint-color: rgba(176, 176, 176, 0.67);
+    background-image: url('project://database/Assets/Gaslight/Textures/Character%20Icons/Stop.png?fileID=2800000&guid=a9798097f6df7094d88bd8f56fa6ccb0&type=3#Stop');
+}
+
+.character_icon_available {
+    background-color: rgba(42, 215, 229, 0.17);
+    -unity-background-image-tint-color: rgba(51, 231, 111, 0.45);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-top-left-radius: 2%;
+    border-bottom-left-radius: 2%;
+    border-top-right-radius: 2%;
+    border-bottom-right-radius: 2%;
+}
+
+.character_icon_available:hover {
+    background-color: rgba(42, 215, 229, 0.58);
+    -unity-background-image-tint-color: rgba(51, 231, 111, 0.75);
+    border-left-width: 4px;
+    border-right-width: 4px;
+    border-top-width: 4px;
+    border-bottom-width: 4px;
+    border-top-left-radius: 5%;
+    border-bottom-left-radius: 5%;
+    border-top-right-radius: 5%;
+    border-bottom-right-radius: 5%;
+    transition-duration: 0.1s;
+}
+
+.character_icon_selected {
+    background-color: rgb(42, 215, 229);
+    -unity-background-image-tint-color: rgb(51, 231, 111);
+    scale: 1.2 1.2;
+    transition-property: scale;
+    transition-duration: 0.6s;
+}
