@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea5826238c1f4022a146536b8e7c0609, type: 3}
+  m_Name: DefaultBaseTileDB
+  m_EditorClassIdentifier: 
+  BaseTileAssets:
+  - Asset: {fileID: 2712927923833654884, guid: e2f623d55d5c4c1459b07a94316bfdb2, type: 3}
+    Key: floor
+    traversible: 1
+    heightOffset: 0
+    traversingCost: 0
+  - Asset: {fileID: 5795578698209057080, guid: 85a3bb8e6a8bd6f4f98a4168515c5097, type: 3}
+    Key: wall
+    traversible: 0
+    heightOffset: 0
+    traversingCost: 0

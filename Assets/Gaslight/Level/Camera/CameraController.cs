@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using Cinemachine;
+using Unity.VisualScripting;
 using UnityEditor.Search;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
@@ -28,6 +29,10 @@ public class CameraController : MonoBehaviour
     public float zoomAmount = 0f;
     [SerializeField] public bool _doZoom;
 
+    public void HandleMouseZoom(InputAction.CallbackContext ctx)
+    {
+        
+    }
     public void HandleZoom(InputAction.CallbackContext ctx)
     {
         float inputAmount = ctx.ReadValue<float>();
@@ -39,11 +44,9 @@ public class CameraController : MonoBehaviour
 
         if (ctx.canceled)
         {
-            
+            _doZoom = false;
+            // zoomAmount = 0;
         }
-    }
-    void Awake()
-    {
     }
     void Start()
     {
@@ -119,8 +122,9 @@ public class CameraController : MonoBehaviour
 
     public bool _doOrbit = false;
     public Vector2 _orbitInput;
-    [FormerlySerializedAs("newRotation")] public Quaternion _newRotation;
-    [Range(0f,30f)] public float _rotationSpeed = 1f;
+    public Quaternion _newRotation;
+    [Range(0f,30f)] public float _horizontalOrbitSpeed = 1f;
+    [Range(0f,300f)] public float _verticalOrbitSpeed = 1f;
 
     public float camXRotation;
     public float camXRotationMin = default;
@@ -154,6 +158,7 @@ public class CameraController : MonoBehaviour
             {
                 _doOrbit = true;
                 _orbitInput.x = displacement.x;
+                _orbitInput.y = displacement.y;
             }
             else
             {
@@ -172,6 +177,7 @@ public class CameraController : MonoBehaviour
         if (ctx.performed)
         {
             _doMouseOrbit = true;
+            _orbitInput = Vector2.zero;
         }
 
         if (ctx.canceled)
@@ -180,23 +186,21 @@ public class CameraController : MonoBehaviour
             _orbitInput = Vector2.zero;
         }
     }
+    
     void Orbit(Vector2 direction)
     {
-        // camXRotation = _camTransform.rotation.x;
+        camXRotation = _camTransform.localEulerAngles.x;
         _newRotation *= Quaternion.Euler(Vector3.up * direction.x);
         // _newRotation *= Quaternion.Euler(Vector3.right * direction.y);
-        // var newCamRotationX = camXRotation + direction.y;
-        // newCamRotationX = Mathf.Clamp(newCamRotationX, camXRotationMin, camXRotationMax);
-        // var newCamRotation = Quaternion.Euler(newCamRotationX,_camTransform.rotation.y, _camTransform.rotation.z);
-        // _camTransform.localRotation =
-            // Quaternion.Lerp(_camTransform.localRotation, newCamRotation, Time.deltaTime * _rotationSpeed);
-        transform.rotation = Quaternion.Lerp(transform.rotation, _newRotation, Time.deltaTime * _rotationSpeed);
+        var newCamRotationX = camXRotation + direction.y;
+        newCamRotationX = Mathf.Lerp(camXRotation, newCamRotationX, Time.deltaTime*_verticalOrbitSpeed);
+        newCamRotationX = Mathf.Clamp(newCamRotationX, camXRotationMin, camXRotationMax);
+        _camTransform.localEulerAngles = new Vector3(newCamRotationX, 0.0f, 0.0f);
+        transform.rotation = Quaternion.Lerp(transform.rotation, _newRotation, Time.deltaTime * _horizontalOrbitSpeed);
         _newRotation = transform.rotation;
     }
     void Update()
     {
-        
-
         if (!_isInFollowTransition)
         {
             if (_follow)
@@ -226,9 +230,15 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    [Foldout("Zooming")]
+    public float _camLocalZ = default;
+
+    [Foldout("Zooming")] public Vector3 _camNewLocalTransform; 
     private void Zoom(float f)
     {
-        
+        Vector3 zoomVector = _camTransform.forward * f;
+        Debug.DrawRay(_camTransform.position, zoomVector, Color.cyan, 5.0f);
+        _camTransform.position += zoomVector;
     }
 
     void Pan(Vector2 direction)

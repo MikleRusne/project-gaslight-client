@@ -12,7 +12,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 #region Character related Descriptors
 
@@ -31,7 +31,7 @@ public struct CharacterLevelDescriptor
     public string baseCharacter;
     public EFaction faction;
     public string behavior;
-    public BehaviorTargets BehaviorTargets;
+    public BehaviorTarget[] behaviorTargets;
     public SimpleCharacter.NamedFloatTrait[] FloatTraitOverrides;
     public SimpleCharacter.NamedStringTrait[] StringTraitOverrides;
 }
@@ -108,31 +108,55 @@ public class Level : MonoBehaviour
     //Defines how many tiles a character can move with respect to 1 point of speed
     public static float SpeedToTileMovementFactor = 4.0f;
 
+    public LayerMask DetectionLayerMask = default;
+    [Foldout("Debug")]
     public  GameObject[] _tile3DObjectsBase = new GameObject[] { };
+    [Foldout("Debug")]
     public List<GameObject>[] _tile3DObjectsDeco = new List<GameObject>[] { };
     
+    [Foldout("Debug")]
     public bool[] tileTraversible = new bool[] { };
+    [Foldout("Debug")]
     public GameObject TileDisplayPrefab = default;
+    [Foldout("Debug")]
     public TileDisplay[] TileDisplays;
+    [Foldout("Debug")]
     public BoxCollider[] _tileDisplayColliders;
 
+    public Color _defaultTileDisplayColor = default;
     public LevelDescriptor levelDescriptor = default;
     public bool getLevelDescriptorsFromPlayerPrefs = false;
-    [SerializeField] private BaseTileDB baseTileDB;
-    [SerializeField] private DecoTileDB decoTileDB;
-
+    [FormerlySerializedAs("baseTileDB")]
+    [Foldout("Descriptors")]
+    [SerializeField] private BaseTileDB _baseTileDB;
+    [FormerlySerializedAs("decoTileDB")]
+    [Foldout("Descriptors")]
+    [SerializeField] private DecoTileDB _decoTileDB;
+    [Foldout("Descriptors")]
+    [SerializeField] private BehaviorRegistry _behaviorRegistry;
     
+    
+    [Foldout("Descriptors")]
     public bool getCharacterDescriptorsFromPlayerPrefs = false;
+    [Foldout("Descriptors")]
     [SerializeField]
     private List<CharacterLevelDescriptor> CharacterLevelDescriptors = default;
+    [Foldout("Descriptors")]
     [SerializeField] private CharacterAssetDB characterAssetDB = default;
+    [Foldout("Descriptors")]
     [SerializeField] private CharacterIconDB characterIcons = default;
+    [Foldout("Debug")]
     [SerializeField]
     public Tile[] Tiles;
     //A dictionary will make this far easier
     //However, we do not live in a world where unity serializes dicts
+    [Foldout("Debug")]
     [SerializeField]
     public List<RuntimeLevelCharDescriptor> characters;
+
+    
+    [Foldout("Debug")]
+    public int currentBuildIndex = 0;
 
     void ErrorOnDuplicateCharacters()
     {
@@ -158,6 +182,7 @@ public class Level : MonoBehaviour
     public String[] CellStringList; 
     private async Task Awake()
     {
+        
         if (instance != null && instance != this) 
         { 
             Destroy(this); 
@@ -167,6 +192,12 @@ public class Level : MonoBehaviour
             instance = this; 
         }
 
+        pathFinder = new AStar();
+        
+        pathFinder._ClosedColor = _ClosedColor;
+        pathFinder._OpenColor = _OpenColor;
+        pathFinder.IterationsPerFrame = _IterationsPerFrame;
+        
         if (!_levelGenerated)
         {
             if (getLevelDescriptorsFromPlayerPrefs)
@@ -221,8 +252,20 @@ public class Level : MonoBehaviour
                     continue;
                 }
                 requiredCharacter.passiveDirective = new ForegoDirective();
-                requiredCharacter.behavior = BehaviorFactory.NewBehaviorByName("default_enemy_behavior",cld.BehaviorTargets.root);
-                requiredCharacter.behavior.Invoker = requiredCharacter;
+                if (!_behaviorRegistry.isBehavior("default enemy behavior"))
+                {
+                    Debug.LogError("Could not find behavior of that name");
+                    continue;
+                }
+
+                var newBehaviorGameObject = 
+                    GameObject.Instantiate(_behaviorRegistry.GetBehaviorPrefab("default enemy behavior")
+                        , parent: requiredCharacter.transform);
+                var newBehavior = newBehaviorGameObject.GetComponent<Behavior>();
+                newBehavior.targets = cld.behaviorTargets.ToList();
+                requiredCharacter.behavior = newBehavior;
+                newBehavior.Invoker = requiredCharacter;
+                // requiredCharacter.behavior.Invoker = requiredCharacter;
                 requiredCharacter.behavior.Initialize();
             }
         }   
@@ -426,20 +469,25 @@ public class Level : MonoBehaviour
            {
                var TileDescriptor = row.tiles[j];
                BaseTileAsset curLA;
-               //Traversible by default, turn false if you find at least a single blocking element
                tileTraversible[i * LWidth + j] = true;
-               if (!baseTileDB.GetFromList(TileDescriptor.baseTileDescriptor.name, out curLA))
+               if (!_baseTileDB.GetFromList(TileDescriptor.baseTileDescriptor.name, out curLA))
                {
                    Debug.LogError("Invalid LA name:_" + TileDescriptor.baseTileDescriptor.name 
-                               + "_Candidates are :_" + String.Join(",",baseTileDB.ValidCandidates()));
+                               + "_Candidates are :_" + String.Join(",",_baseTileDB.ValidCandidates()));
                    continue;
                }
                
                if (!curLA.traversible)
                {
-                   // Debug.Log(single_name + " is blocking");
+                   // Debug.Log(curLA.Key + " is blocking");
                    tileTraversible[i * LWidth + j] = false;
-                   break;
+               }
+               else
+               {
+                   // Debug.Log(curLA.Key + " is traversible");
+                   tileTraversible[i * LWidth + j] = true;
+
+                   
                }
            }
        }
@@ -570,8 +618,6 @@ public class Level : MonoBehaviour
         var temp = TileCoordinate.IndexToCoord(index);
         return CoordToWorld(temp);
     }
-
-    public int currentBuildIndex = 0;
     [ContextMenu("Create Level")]
     public async Task CreateLevel()
     {
@@ -619,7 +665,7 @@ public class Level : MonoBehaviour
         await SetAndSpawnCharacters();
         this.TurnOffAllDisplays();
         _levelGenerated = true;
-        Lightmapping.BakeAsync();
+        // Lightmapping.BakeAsync();
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
     }
     [ContextMenu("Destroy children")]
@@ -693,7 +739,7 @@ public class Level : MonoBehaviour
         var tile = Tiles[y*LWidth+x];
         //Spawn base, code block to avoid scoping requiredLA
         Transform baseTransform = null;
-        if (baseTileDB.GetFromList(tile.baseTileDescriptor.name, out BaseTileAsset requiredBaseTileAsset))
+        if (_baseTileDB.GetFromList(tile.baseTileDescriptor.name, out BaseTileAsset requiredBaseTileAsset))
         {
             if(requiredBaseTileAsset==null){
                 Debug.LogError("Base name "+ tile.baseTileDescriptor.name +" not found");
@@ -703,7 +749,7 @@ public class Level : MonoBehaviour
         {
             foreach (var decoration in tile.decorations)
             {
-                if (decoTileDB.GetFromList(decoration.name, out DecoTileAsset RequiredLA))
+                if (_decoTileDB.GetFromList(decoration.name, out DecoTileAsset RequiredLA))
                 {
                     SpawnDecoAt(y,x,decoration.yRotation,RequiredLA, squarePosition, baseTransform);
                     break;       
@@ -752,9 +798,38 @@ public class Level : MonoBehaviour
     
     #region Tile selection
 
+    public List<int> GetTilesWithDisplaysOn()
+    {
+        List<int> displaysOn = new List<int>(capacity: LWidth * LHeight);
+        
+        foreach (var tileDisplay in TileDisplays.Select((value, i)=> new {i, value}))
+        {
+            if (tileDisplay.value.gameObject.activeInHierarchy)
+            {
+                displaysOn.Add(tileDisplay.i);                
+            }
+        }
+
+        displaysOn.TrimExcess();
+        return displaysOn;
+    }
+    public List<int> GetTilesWithDisplaysOff()
+    {
+        List<int> displaysOff = new List<int>(capacity: LWidth * LHeight);
+        
+        foreach (var tileDisplay in TileDisplays.Select((value, i)=> new {i, value}))
+        {
+            if (!tileDisplay.value.gameObject.activeInHierarchy)
+            {
+                displaysOff.Add(tileDisplay.i);                
+            }
+        }
+
+        displaysOff.TrimExcess();
+        return displaysOff;
+    }
     public void TurnOffAllDisplays()
     {
-        // Debug.Log("Turning off displays");
 
         foreach (var tileDisplay in TileDisplays)
         {
@@ -763,7 +838,6 @@ public class Level : MonoBehaviour
     }
     public void TurnOffAllColliders()
     {
-        // Debug.Log("Turning off displays");
 
         foreach (var tileCollider in _tileDisplayColliders)
         {
@@ -826,12 +900,29 @@ public class Level : MonoBehaviour
             _tileDisplayColliders[index].enabled = true;
         }
     }
-    public void ChangeTileDisplaySelectionState(int[] locations, TileDisplay.State newState)
+    public void ChangeTileDisplayColor(int[] locations, Color newColor)
     {
         foreach (var location in locations)
         {
-            TileDisplays[location].setState(newState);
+            ChangeTileDisplayColor(location, newColor);
         }
+    }
+    public void ChangeTileDisplayColor(int location, Color newColor)
+    {
+        TileDisplays[location].SetColor(newColor);
+    }
+
+
+    public void ResetTileDisplayColor(int location)
+    {
+        TileDisplays[location].SetColor(_defaultTileDisplayColor);
+    }
+    public void ResetTileDisplayColor(int[] locations)
+    {
+        foreach (int location in locations)
+        {
+            ResetTileDisplayColor(location);
+        }        
     }
     public void ChangeTileDisplayActivationState(int[] locations, bool newState)
     {
@@ -845,28 +936,6 @@ public class Level : MonoBehaviour
 
     public UnityEvent TileSelected;
     public UnityEvent<int> TileDeselected;
-    public void SelectTile(int index)
-    {
-        if (highlightedTile!=null && index == highlightedTile.index)
-        {
-            DehighlightTile();
-        }
-        DeselectTile();
-        isATileSelected = true;
-        selectedTile = Tiles[index];
-        TileDisplays[index].setState(TileDisplay.State.Selected);
-        TileSelected?.Invoke();
-    }
-    public void DeselectTile()
-    {
-        if (isATileSelected)
-        {
-            TileDisplays[selectedTile.tileKey].setState(TileDisplay.State.Idle);
-        }
-        isATileSelected = false;
-        TileDeselected?.Invoke(selectedTile.tileKey);
-    }
-
     
     public bool isLocationValid(int key)
     {
@@ -975,7 +1044,7 @@ public class Level : MonoBehaviour
 
     public List<String> GetValidBaseTileNames()
     {
-        var output = baseTileDB.BaseTileAssets
+        var output = _baseTileDB.BaseTileAssets
             // .FindAll(e => e.levelAssetType == LevelAssetType.LevelObjectBase)
             .Select(e=>e.Key)
             .ToList();
@@ -1002,38 +1071,6 @@ public class Level : MonoBehaviour
         TileChanged.Invoke(index);
         TileDisplays[index].RefreshDisplay();
     }
-    private TileDisplay highlightedTile = default;
-    public void HighlightTile(int index)
-    {
-
-        if (isATileSelected && selectedTile.tileKey == index)
-        {
-            // Debug.Log("That tile is selected");
-            return;
-        }
-        if (highlightedTile != null)
-        {
-            if (highlightedTile.index == index)
-            {
-                return;
-            }
-            DehighlightTile();
-        }
-        {
-            // Debug.Log("Highlighting "+index);
-            TileDisplays[index].setState(TileDisplay.State.Highlighted);
-            highlightedTile = TileDisplays[index];
-        }
-    }
-
-    public void DehighlightTile()
-    {
-        if (highlightedTile != null)
-        {
-            highlightedTile.setState(TileDisplay.State.Idle);
-        }
-        highlightedTile = null;
-    }
 
     
     #endregion
@@ -1042,7 +1079,12 @@ public class Level : MonoBehaviour
     #region Pathfinding helpers
 
     public bool debugPathfinder = false;
-    public AStar pathFinder = new AStar(){debug = false};
+    [SerializeField][Foldout("Pathfinder")] public Color _OpenColor;
+    [SerializeField][Foldout("Pathfinder")] public Color _ClosedColor;
+    [SerializeField][Foldout("Pathfinder")] public Color _PathColor;
+    [SerializeField][Foldout("Pathfinder")] public int _IterationsPerFrame;
+    [SerializeField]
+    public AStar pathFinder;
     [SerializeField] private int height;
     [SerializeField] private int width;
 
@@ -1072,9 +1114,11 @@ public class Level : MonoBehaviour
         return distance;
     }
     
-    public int GetPathDistance(int a, int b, int maxTiles =0)
+    public int GetPathDistance(int a, int b, Func<Node,int, (bool,float)> evaluator)
     {
-        var path = FindPath(a, b, maxTiles);
+        var pathTask = FindPath(a, b, evaluator);
+        pathTask.Wait();
+        var path = pathTask.Result;
         if (path == null)
         {
             return Int32.MaxValue;
@@ -1152,7 +1196,7 @@ public class Level : MonoBehaviour
         return Int32.MaxValue;
     }
 
-    public bool hasNeighborInDirection(int loc, ELinkDirection direction)
+    public bool HasValidLocationInDirection(int loc, ELinkDirection direction)
     {
         var other = DirectionOntoLocation(loc, direction);
         if (other == Int32.MaxValue)
@@ -1168,15 +1212,26 @@ public class Level : MonoBehaviour
 
     #region Pathfinding features
     //Double this to find the distance between two tiles
-    public List<int> FindPath(int start, int end, int maxTiles = Int32.MaxValue)
+    public Func<Node,int, (bool,float)> GetManhattanEvaluator(int startLocation)
     {
-        pathFinder.FindPath(start, end);
-        if (pathFinder.PathFound == false)
+        return (Node prev,int end) =>
         {
-            // Debug.Log("No valid path");
+            return (true, ManhattanDistance(startLocation, end));
+        };
+    }
+    
+    //To specify a distance cutoff,
+    //you can always make it so that if the manhattan distance exceeds a certain value then it becomes MaxValue
+    //So this is not the job of the level, it is the job of the character to describe the cutoff
+    public async Task<List<int>>FindPath(int start, int end, Func<Node, int, (bool,float)> evaluator, bool debug = false)
+    {
+        var (pathFound, path) = await pathFinder.FindPath(start, end, evaluator, debug);
+        if (pathFound == false)
+        {
+            Debug.Log("No valid path");
             return null;
         }
-        return pathFinder.PathLocs.Take(maxTiles).ToList();
+        return pathFinder.PathLocs.ToList();
     }
 
     #endregion

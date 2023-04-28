@@ -34,7 +34,7 @@ public struct DirectiveTarget
     public string value;
 }
 [Serializable]
-public abstract class GDirective
+public abstract class Directive
 {
     public abstract int actionPointCost { get; }
     public abstract void AddTarget(int location);
@@ -71,9 +71,11 @@ public abstract class GDirective
             }));
     }
     public abstract Task DoAction();
+    public abstract Task Visualize();
+    public abstract Task EndVisualize();
 }
 
-public class MoveDirective : GDirective
+public class ManualMoveDirective : Directive
 {
     private bool targetSet = false;
     public override int actionPointCost => 2;
@@ -139,15 +141,24 @@ public class MoveDirective : GDirective
             
         }
 
-        if (Invoker is Actor)
-        {
-            await ((Actor)Invoker).MoveToTile(index);
-        }
-    }
+
+        // Debug.Log("Calling move");
+        await (Invoker).MoveToTile(index);
+        // Debug.Log("Moving on from move");
     
+    }
+
+    public async override Task Visualize()
+    {
+        
+    }
+
+    public async override Task EndVisualize()
+    {
+    }
 }
 
-public class AttackDirective : GDirective
+public class AttackDirective : Directive
 {
     private bool attackTargetSet = false;
     private int attackTarget;
@@ -157,12 +168,12 @@ public class AttackDirective : GDirective
     {
         if (!attackTargetSet)
         {
-            Debug.Log("Set attack target");
+            // Debug.Log("Set attack target");
             return true;
         }
         if (!attackLocationSet)
         {
-            Debug.Log("Set attack location");
+            // Debug.Log("Set attack location");
             return true;
         }
         return false;
@@ -202,7 +213,7 @@ public class AttackDirective : GDirective
             if (Level.instance.ManhattanDistance(Invoker.MyTile.tileKey, location) - 2 >
                 (speed * Level.SpeedToTileMovementFactor / 2)
                 ||
-                Level.instance.GetPathDistance(Invoker.MyTile.tileKey, location) - 2 >
+                Level.instance.GetPathDistance(Invoker.MyTile.tileKey, location, Level.instance.GetManhattanEvaluator(Invoker.MyTile.tileKey)) - 2 >
                 (speed * Level.SpeedToTileMovementFactor / 2))
             {
                 return false;
@@ -234,7 +245,7 @@ public class AttackDirective : GDirective
             {
                 return false;
             }
-            if (Level.instance.GetPathDistance(attackTarget, location) > 2)
+            if (Level.instance.GetPathDistance(attackTarget, location, Level.instance.GetManhattanEvaluator(attackTarget)) > 2)
             {
                 return false;
             }
@@ -242,7 +253,7 @@ public class AttackDirective : GDirective
             if (Level.instance.ManhattanDistance(Invoker.MyTile.tileKey, location)>
                 (speed * Level.SpeedToTileMovementFactor / 2)
                 ||
-                Level.instance.GetPathDistance(Invoker.MyTile.tileKey, location) >
+                Level.instance.GetPathDistance(Invoker.MyTile.tileKey, location, Level.instance.GetManhattanEvaluator(Invoker.MyTile.tileKey)) >
                 (speed * Level.SpeedToTileMovementFactor / 2))
             {
                 return false;
@@ -269,10 +280,20 @@ public class AttackDirective : GDirective
         await Invoker.Attack(attackTarget);
         await Task.Yield();
     }
+
+    public async override Task Visualize()
+    {
+        
+    }
+
+    public async override Task EndVisualize()
+    {
+        
+    }
 }
 
 [Serializable]
-public class ForegoDirective : GDirective
+public class ForegoDirective : Directive
 {
     public override int actionPointCost => Invoker.actionPoints;
 
@@ -307,6 +328,15 @@ public class ForegoDirective : GDirective
         // Debug.Log("Foregoing turn");
         return Task.CompletedTask;
     }
+
+    public async override Task Visualize()
+    {
+        
+    }
+
+    public override async Task EndVisualize()
+    {
+    }
 }
 
 public  class DirectiveFactory
@@ -315,19 +345,19 @@ public  class DirectiveFactory
 
         public DirectiveFactory()
         {
-            var directiveTypes = Assembly.GetAssembly(typeof(GDirective)).GetTypes()
-                .Where(someType=> someType.IsClass && (!someType.IsAbstract) && (someType.IsSubclassOf(typeof(GDirective))));
+            var directiveTypes = Assembly.GetAssembly(typeof(Directive)).GetTypes()
+                .Where(someType=> someType.IsClass && (!someType.IsAbstract) && (someType.IsSubclassOf(typeof(Directive))));
             directivesByName = new();
             
             foreach (var directiveType in directiveTypes)
             {
-                var temp = Activator.CreateInstance(directiveType) as GDirective;
+                var temp = Activator.CreateInstance(directiveType) as Directive;
                 directivesByName.Add((temp.Name, directiveType));
             }
         }
 
         [CanBeNull]
-        public GDirective GetDirective(string directiveType)
+        public Directive GetDirective(string directiveType)
         {
             var count = directivesByName.Count(entry => entry.name == directiveType);
             if (count!=1)
@@ -343,14 +373,14 @@ public  class DirectiveFactory
             }
 
             var requiredType = directivesByName.Find((entry) => entry.name == directiveType).directive;
-            var directive = Activator.CreateInstance(requiredType) as GDirective;
+            var directive = Activator.CreateInstance(requiredType) as Directive;
             return directive;
 
         }
         
         // Never use this
         [CanBeNull]
-        public GDirective GetDirective(string directiveType, (string key, string value)[] targets)
+        public Directive GetDirective(string directiveType, (string key, string value)[] targets)
         {
             var temp = GetDirective(directiveType);
             temp.FillTargets(targets);

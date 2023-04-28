@@ -14,9 +14,11 @@ using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 
 namespace GameManagement{
+    //TODO: Add functionality to highlight the tile that the player is under
     [Serializable]
     public class PlayerController
     {
+        public Color _currentPlayerTileColor;
         public SelectUnderMouse _selector;
         public DirectiveManager _directiveManager;
         public DirectiveIconManager _directiveIcon;
@@ -85,7 +87,6 @@ namespace GameManagement{
             var playerInitialTile = character.MyTile.tileKey;
             Level.instance.TurnOffAllDisplays();
             Level.instance.ChangeTileDisplayActivationState(new int[]{playerInitialTile}, true);
-            Level.instance.ChangeTileDisplaySelectionState(new int[]{playerInitialTile}, TileDisplay.State.Selected);
             while (tempDirective.MoreConditions())
             {
                 tileSelectionCTS = new CancellationTokenSource();
@@ -105,8 +106,7 @@ namespace GameManagement{
                         Debug.Log("No longer awaiting tile selection for " + name);
                         Level.instance.TurnOffAllDisplays();
                         // Level.instance.ChangeTileDisplayActivationState(new int[]{playerInitialTile}, false);
-                        Level.instance.ChangeTileDisplaySelectionState(new int[] { playerInitialTile },
-                        TileDisplay.State.Idle);
+                        // Level.instance.ResetTileDisplayColor(playerInitialTile);
                         // Level.instance.ChangeTileDisplaySelectionState(selectedTiles.ToArray(), TileDisplay.State.Idle);
                         // Level.instance.ChangeTileDisplayActivationState(selectedTiles.ToArray(), false);
                         ct.ThrowIfCancellationRequested();
@@ -125,15 +125,14 @@ namespace GameManagement{
                 
                 
             }
-            // Debug.Log("Selected tile "+ selectedTile);
-            // Debug.Log("Directive conditions fulfilled");
             character.passiveDirective = tempDirective;
-            Level.instance.ChangeTileDisplayActivationState(new int[]{playerInitialTile}, false);
-            Level.instance.ChangeTileDisplaySelectionState(new int[]{playerInitialTile}, TileDisplay.State.Idle);
+            // Level.instance.ChangeTileDisplayActivationState(new int[]{playerInitialTile}, false);
+            // Level.instance.ChangeTileDisplayColor(new int[]{playerInitialTile}, TileDisplay.State.Idle);
+            Level.instance.ResetTileDisplayColor(playerInitialTile);
             lockMoveSelection = true;
             Debug.Log("Performing " + name + " with " + character.name);
             await character.passiveDirective.DoAction();
-            Level.instance.ChangeTileDisplaySelectionState(selectedTiles.ToArray(), TileDisplay.State.Idle);
+            Level.instance.ResetTileDisplayColor(selectedTiles.ToArray());
             Level.instance.ChangeTileDisplayActivationState(selectedTiles.ToArray(), false);
             
 
@@ -184,7 +183,7 @@ namespace GameManagement{
                 Debug.Log("Not changing character because no other valid characters.");
                 return;
             }
-
+            
             int initial = currentPlayerIndex;
             //Switch to the next player character that has at least one action point left
             // Debug.Log("Changing from "+ currentPlayerIndex + " to " + (currentPlayerIndex + 1) % players.Count);
@@ -211,10 +210,13 @@ namespace GameManagement{
             isPlayerChanged = true;
             var players = Level.instance.GetCharactersOfFaction(EFaction.Player);
             this._players = this._players;
+
             currentPlayerIndex = 0;
             //We have a list of players
             if (players.Count == 0)
             {
+                // Debug.Log("0 players");
+                await Task.Delay(millisecondsDelay: 600);
                 return;
             }
             //Initialize their action points
@@ -363,7 +365,7 @@ namespace GameManagement{
                 Quaternion.Euler(-90.0f, 0.0f, 0.0f)).GetComponent<CurrentTurnFollower>();
             CurrentTurnObject.gameObject.SetActive(false);
         }
-        public async Task PerformDirectives(){
+        public async Task ExecuteBehaviors(){
             var enemies = Level.instance.GetCharactersOfFaction(EFaction.Enemy);
              StringBuilder sb = new StringBuilder();
              foreach (var enemy in enemies)
@@ -379,9 +381,10 @@ namespace GameManagement{
                  // CurrentTurnObject.enabled = true;
                  CurrentTurnObject.target = enemy.transform;
                  enemy.behavior.Tick();
-                 // Debug.Log("Making "+ enemy.name + " perform passive action.");
+                 Debug.Log("Making "+ enemy.name + " perform passive action.");
                  await enemy.passiveDirective.DoAction();
-                CurrentTurnObject.gameObject.SetActive(false);
+                 // Debug.Log("Moving on from action");
+                 CurrentTurnObject.gameObject.SetActive(false);
                  // CurrentTurnObject.enabled = false;
                  cam._follow = false;
                  await Task.Delay(millisecondsDelay: 100);
@@ -394,7 +397,7 @@ namespace GameManagement{
         public async Task Execute()
         {
              // Debug.Log("Starting directives");
-             await PerformDirectives();
+             await ExecuteBehaviors();
              // await (Task.Delay(2000));
              // Debug.Log("Moving on");
         }
@@ -415,7 +418,7 @@ public class OrchestratorWithControllers : MonoBehaviour
     public VisualTreeAsset _playerCharacterIconTemplate = default;
     public DirectiveManager _directiveManager;
     public DirectiveIconManager _directiveIcon;
-
+    public bool _skipPlayerTurn = false;
     public void OnValidate()
     {
         CurrentTurnFollower.offset = new Vector3(0.0f, CurrentTurnFollowerYOffset, 0.0f);
@@ -435,16 +438,23 @@ public class OrchestratorWithControllers : MonoBehaviour
             Debug.LogError("_playerMovesUI null");
         }
         _playerControllerUI = _uiDocument.rootVisualElement.Q("PLAYER_CONTROLLER");
-        playerController = new PlayerController(_directiveManager, _directiveIcon,_cam, _playerControllerUI, validMoveTemplate, _playerCharacterIconTemplate,_selector);
+        playerController = new PlayerController(
+            _directiveManager, _directiveIcon,
+            _cam, _playerControllerUI, validMoveTemplate, _playerCharacterIconTemplate,_selector);
         enemyController = new EnemyController(currentTurnFollowerPrefab, _cam);
         HideEnemyTurnUI();
         HidePlayerTurnUI();
     }
-    
+
+    public bool startGame = false;
     public void OnLevelGenerated()
     {
-        Level.instance.TurnOffAllDisplays();
-        TurnLoop();
+        if (startGame)
+        {
+            Level.instance.TurnOffAllDisplays();
+            TurnLoop();
+            
+        }
     }
     public bool playerTurn = default;
     

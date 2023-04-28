@@ -19,8 +19,12 @@ MonoBehaviour:
     floatTraits:
     - name: speed
       value: 1
-    - name: max_action_points
+    - name: max action points
+      value: 4
+    - name: health
       value: 2
+    - name: max health
+      value: 7
   - name: Twitch
     roles: 02000000
     stringTraits: []

@@ -8,18 +8,18 @@ namespace Tiles
     public class Node
     {
         public float f;
-        public float g;
+        public int Step;
         public float tileCost;
         public Node PrevNode;
 
         public Tile Tile;
         public Vector3 position;
-        public Node(Tile tile, Node prevNode, float g, float h=0.0f,float tileCost=0.0f)
+        public Node(Tile tile, Node prevNode, int step, float h=0.0f)
         {
             this.Tile = tile;
             this.PrevNode = prevNode;
-            this.g = g;
-            this.f = g + h;
+            this.Step = step;
+            this.f = step + h;
         }
 
 

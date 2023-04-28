@@ -14,7 +14,9 @@ public class SelectUnderMouse : MonoBehaviour
 {
     public TileCoordinate? hitTileCoord = null;
     public int? highlightedTileIndex;
-    
+
+    public Color _highlightColor;
+    public Color _selectedColor;
     public Transform camTarget = default;
     [SerializeField] private bool isMouseOverUI = false;    
     void Update()
@@ -50,7 +52,7 @@ public class SelectUnderMouse : MonoBehaviour
     {
         if (location != null)
         {
-            Level.instance.TileDisplays[location.Value].setState(TileDisplay.State.Idle);
+            Level.instance.ResetTileDisplayColor(location.Value);
         }
     }
 
@@ -131,10 +133,10 @@ public class SelectUnderMouse : MonoBehaviour
                 }
                 if (highlightedTileIndex != null)
                 {
-                    Level.instance.TileDisplays[highlightedTileIndex.Value].setState(TileDisplay.State.Idle);
+                    Level.instance.ResetTileDisplayColor(highlightedTileIndex.Value);
                 }
                 highlightedTileIndex = newTileIndex;
-                Level.instance.TileDisplays[highlightedTileIndex.Value].setState(TileDisplay.State.Highlighted);
+                Level.instance.ChangeTileDisplayColor(highlightedTileIndex.Value, _highlightColor);
             }
             
             await Task.Yield();
@@ -147,7 +149,7 @@ public class SelectUnderMouse : MonoBehaviour
         }
         else
         {
-            Level.instance.TileDisplays[highlightedTileIndex.Value].setState(TileDisplay.State.Selected);
+            Level.instance.ChangeTileDisplayColor(highlightedTileIndex.Value, _selectedColor);
         }
         Level.instance.TurnOffAllColliders();
         return highlightedTileIndex;
@@ -180,7 +182,6 @@ public class SelectUnderMouse : MonoBehaviour
         // Debug.Log("Selecting "+ hitTileCoord.Value.index());
         if (hitTileCoord.HasValue)
         {
-            Level.instance.SelectTile(hitTileCoord.Value.index());
         }
     }
 
@@ -229,6 +230,5 @@ public class SelectUnderMouse : MonoBehaviour
 
     void HighlightTile()
     {
-        Level.instance.HighlightTile(hitTileCoord.Value.index());
     }
 }

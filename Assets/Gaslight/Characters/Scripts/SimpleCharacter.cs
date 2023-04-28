@@ -32,9 +32,9 @@ public abstract class SimpleCharacter : MonoBehaviour
         public float value;
     }
 
-
+    public abstract (bool, float) GetPathfindingHeuristic(Node previous,int to);
     public abstract Task Attack(int location);
-    public abstract Task MoveToTile(int index);
+    public abstract Task<bool> MoveToTile(int index);
 
     [Serializable]
     public struct NamedStringTrait
@@ -54,8 +54,23 @@ public abstract class SimpleCharacter : MonoBehaviour
     public List<NamedFloatTrait> floatTraits= new List<NamedFloatTrait>();
     public List<NamedStringTrait> stringTraits = new List<NamedStringTrait>();
 
+    public UnityEvent<int> ActionPointsChanged;
+    public UnityEvent<int> HealthChanged;
     public int actionPoints=0;
-    public float health=0;
+
+    public void SetActionPoints(int newValue)
+    {
+        int old = this.actionPoints;
+        this.actionPoints = newValue;
+        ActionPointsChanged.Invoke(old);
+    }
+    public int health=0;
+    public void SetHealth(int newValue)
+    {
+        int old = this.health;
+        this.health = newValue;
+        HealthChanged.Invoke(old);
+    }
     public EFaction faction = EFaction.Neutral; 
     protected void Awake()
     {
@@ -102,16 +117,24 @@ public abstract class SimpleCharacter : MonoBehaviour
         ErrorOnDuplicateTraits(); 
     }
 
+    
     public void Start()
     {
-        if (isTrait("max_health"))
+        if (isTrait("max health"))
         {
-            this.health = GetFloatTrait("max_health");
+            this.health = Mathf.RoundToInt(GetFloatTrait("max health"));
         }
         else
         {
             this.health = 5;
         }
+
+        HealthChanged.Invoke(0);
+        if (isTrait("max action points"))
+        {
+            this.actionPoints = Mathf.RoundToInt(GetFloatTrait("max action points"));
+        }
+        ActionPointsChanged.Invoke(0);
         Level.instance.CharacterChangedTile.AddListener(OnCharacterTileChanged);
 
     }
@@ -232,7 +255,7 @@ public abstract class SimpleCharacter : MonoBehaviour
     public bool isSelected = false;
 
     [SerializeField]
-    public GDirective passiveDirective;
+    public Directive passiveDirective;
     [SerializeField] public Behavior behavior;
     public BehaviorTree bt;
 

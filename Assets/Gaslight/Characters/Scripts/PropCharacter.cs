@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Characters;
+using Tiles;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,14 +12,20 @@ public class PropCharacter : SimpleCharacter
 
 
     public override MovementComponent movementComponent { get; }
+    public override (bool,float) GetPathfindingHeuristic(Node previous, int to)
+    {
+        return (false,0);
+    }
+
     public override async Task Attack(int location)
     {
         await Task.Yield();
     }
 
-    public override async Task MoveToTile(int index)
+    public override async Task<bool> MoveToTile(int index)
     {
         await Task.Yield();
+        return false;
     }
 
     public override void OnTileChangeSelf()
