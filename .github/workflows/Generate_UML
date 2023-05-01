@@ -10,7 +10,7 @@ jobs:
     name: 'Generate UML'
     runs-on: ubuntu-latest
     env:
-      CODE_PATH: "./Assets/Scripts/"
+      CODE_PATH: "./Assets/"
       UML_OUTPUT_PATH: "./UML/"
       UMP_GENERATION_PARAMETERS: -public -createAssociation -allInOne
     steps:
