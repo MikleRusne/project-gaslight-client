@@ -8,8 +8,8 @@ namespace Gaslight.Characters.Descriptors
     {
         public string name;
         public string archetype;
-        public SimpleCharacter.NamedStringTrait[] stringTraitOverrides;
-        public SimpleCharacter.NamedFloatTrait[] floatTraitOverrides;
+        public Character.NamedStringTrait[] stringTraitOverrides;
+        public Character.NamedFloatTrait[] floatTraitOverrides;
         
     }
 
@@ -19,7 +19,7 @@ namespace Gaslight.Characters.Descriptors
     {
         public string name;
         public Roles[] roles;
-        public SimpleCharacter.NamedStringTrait[] stringTraits;
-        public SimpleCharacter.NamedFloatTrait[] floatTraits;
+        public Character.NamedStringTrait[] stringTraits;
+        public Character.NamedFloatTrait[] floatTraits;
     }
 }

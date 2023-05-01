@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    private List<SimpleCharacter> getAllPlayerCharacters()
+    private List<Character> getAllPlayerCharacters()
     {
         return Level.instance.GetCharactersOfFaction(EFaction.Player);
     }

@@ -69,7 +69,7 @@ public class CharacterAssetDB : ScriptableObject
     }
 
     [CanBeNull]
-    public SimpleCharacter GetCharacter(String input)
+    public Character GetCharacter(String input)
     {
        //Initialize and return a whole SimpleCharacter
        
@@ -87,7 +87,7 @@ public class CharacterAssetDB : ScriptableObject
 
        var requiredGameObject = GameObject.Instantiate(requiredAsset.Value.Base);
        // requiredGameObject.name = requiredAsset.Value.name;
-       var requiredCharacter = requiredGameObject.GetComponent<SimpleCharacter>();
+       var requiredCharacter = requiredGameObject.GetComponent<Character>();
        if (requiredCharacter == null)
        {
            Debug.LogError(input + " has no simple character script on it.");

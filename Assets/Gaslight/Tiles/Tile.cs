@@ -23,14 +23,14 @@ namespace Tiles
 
             var newCoord = new TileCoordinate();
             var X = Mathf.Clamp(
-                Mathf.Round((position.x / (Level.Size + Level.instance.padding))),
+                Mathf.Round((position.x / (Level.Size + Level.instance._padding))),
                 0f,
                 Level.LWidth - 1);
             // Debug.Log("X before rounding: " + X);
             var x = Mathf.RoundToInt(X);
             var y = Mathf.RoundToInt(
                 Mathf.Clamp(
-                    Mathf.Round((position.z / (Level.Size + Level.instance.padding)) + 0.25f),
+                    Mathf.Round((position.z / (Level.Size + Level.instance._padding)) + 0.25f),
                     0f,
                     Level.LHeight - 1)
             );
@@ -91,12 +91,12 @@ namespace Tiles
             };
             return temp;
         }
-        public virtual void CharacterEnter(SimpleCharacter character)
+        public virtual void CharacterEnter(Character character)
         {
             
         }
 
-        public virtual void CharacterExit(SimpleCharacter character)
+        public virtual void CharacterExit(Character character)
         {
             
         }

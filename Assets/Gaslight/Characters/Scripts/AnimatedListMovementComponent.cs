@@ -107,7 +107,7 @@ public class AnimatedListMovementComponent : MovementComponent
                 StartPosition = this.transform.position;
                 TargetPosition = Level.instance.CoordToWorld(index);
                 await AsyncMove();
-                this.GetComponent<SimpleCharacter>().OnTileChangeSelf();
+                this.GetComponent<Character>().OnTileChangeSelf();
                 Level.instance.ChangeCharacterTile(this.transform.name, index);
             }
 

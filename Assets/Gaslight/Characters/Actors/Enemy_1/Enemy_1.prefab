@@ -1580,6 +1580,51 @@ Transform:
   m_Father: {fileID: 3249314299089158891}
   m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6049147132844137866
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7795252511125975891}
+  - component: {fileID: 6412913937049314760}
+  m_Layer: 0
+  m_Name: Raycaster Front
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7795252511125975891
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6049147132844137866}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.645, z: 0.156}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7340194558038332422}
+  m_RootOrder: -1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6412913937049314760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6049147132844137866}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c542c71edea0245418e6034ba5c4d859, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  myActor: {fileID: 4560173353085180312}
 --- !u!1 &6399531601411569338
 GameObject:
   m_ObjectHideFlags: 0
@@ -2011,7 +2056,7 @@ GameObject:
   - component: {fileID: 4560173353085180312}
   m_Layer: 8
   m_Name: Enemy_1
-  m_TagString: Untagged
+  m_TagString: character
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2030,6 +2075,7 @@ Transform:
   m_Children:
   - {fileID: 8250184271700888838}
   - {fileID: 3471989835209762684}
+  - {fileID: 7795252511125975891}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2072,8 +2118,8 @@ MonoBehaviour:
   _TargetPosition: {x: 0, y: 0, z: 0}
   _animator: {fileID: 0}
   path: 
-  _AngleThreshold: 45
-  RotationSpeed: 5
+  _character: {fileID: 4560173353085180312}
+  stopping: 0
   StopMovementCurve:
     serializedVersion: 2
     m_Curve:
@@ -2123,6 +2169,31 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   MovementDuration: 0.5
+  _rotationCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _rotationDuration: 0.933
 --- !u!114 &2061228914968855631
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2158,7 +2229,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1.9208528, z: 1}
+  m_Size: {x: 0.5, y: 1.9, z: 0.5}
   m_Center: {x: 0, y: 0.94271535, z: 0}
 --- !u!114 &4560173353085180312
 MonoBehaviour:
@@ -2172,8 +2243,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f609e451d33f4a42a3b6a2d4ad6de4b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _detectionRaycastOffset: {x: 0, y: 0, z: 0}
   roles: 
   icon: {fileID: 0}
+  _boundingBox: {fileID: 0}
   gameLevel: {fileID: 0}
   MyTile:
     tileKey: 0
@@ -2202,6 +2275,8 @@ MonoBehaviour:
   faction: 2
   isHighlighted: 0
   isSelected: 0
+  behavior: {fileID: 0}
+  _facingDirection: 0
 --- !u!1 &8102616430730200421
 GameObject:
   m_ObjectHideFlags: 0

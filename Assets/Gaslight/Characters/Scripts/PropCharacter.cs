@@ -6,12 +6,17 @@ using Tiles;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PropCharacter : SimpleCharacter
+public class PropCharacter : Character
 {
     public List<(float thresh, GameObject model)> TransitionMeshes;
 
 
     public override MovementComponent movementComponent { get; }
+    public override int GetMaxTraversibleTilesInOneTurn()
+    {
+        throw new System.NotImplementedException();
+    }
+
     public override (bool,float) GetPathfindingHeuristic(Node previous, int to)
     {
         return (false,0);
@@ -22,10 +27,20 @@ public class PropCharacter : SimpleCharacter
         await Task.Yield();
     }
 
+    public override Task<(bool oneGo, List<int> path)> GetPathTowards(int start, int end)
+    {
+        throw new System.NotImplementedException();
+    }
+
     public override async Task<bool> MoveToTile(int index)
     {
         await Task.Yield();
         return false;
+    }
+
+    public override Task<bool> TraversePath(List<int> path)
+    {
+        throw new System.NotImplementedException();
     }
 
     public override void OnTileChangeSelf()
@@ -33,7 +48,7 @@ public class PropCharacter : SimpleCharacter
         
     }
 
-    public override void OnCharacterTileChanged(int location, SimpleCharacter character)
+    public override void OnCharacterTileChanged(int location, Character character)
     {
         
     }
@@ -95,16 +110,16 @@ public class PropCharacter : SimpleCharacter
         }
     }
 
-    public override void OnAttacked(SimpleCharacter other)
+    public override void OnAttacked(Character other)
     {
         
     }
 
-    public override void OnAttack(SimpleCharacter other)
+    public override void OnAttack(Character other)
     {
     }
 
-    public override void Attack(SimpleCharacter target)
+    public override void Attack(Character target)
     {
     }
 }

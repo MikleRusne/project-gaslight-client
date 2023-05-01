@@ -123,7 +123,7 @@ public class AStar
         if(debug)
             Debug.Log("Analyzing "+ CurrentNode.Tile.tileKey);
         Tile curTl = CurrentNode.Tile;
-        foreach (Level.ELinkDirection direction in Enum.GetValues(typeof(Level.ELinkDirection)))
+        foreach (Level.ELevelDirection direction in Enum.GetValues(typeof(Level.ELevelDirection)))
         {
             //Adds neighbors of current node to open list
             

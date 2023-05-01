@@ -16,3 +16,6 @@ MonoBehaviour:
   - name: default enemy behavior
     prefab: {fileID: 7317348483986794081, guid: c90dc7548be8e0f4f9e67bc5b7426c30,
       type: 3}
+  - name: no behavior
+    prefab: {fileID: 8490591800647375850, guid: 959419d0b549d3547a8f255fad69ae2c,
+      type: 3}

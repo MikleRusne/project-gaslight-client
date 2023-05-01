@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Networking;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 #region Character related Descriptors
 
@@ -29,11 +30,12 @@ public struct CharacterLevelDescriptor
     public string name;
     public string iconName;
     public string baseCharacter;
+    public Level.ELevelDirection facing;
     public EFaction faction;
     public string behavior;
     public BehaviorTarget[] behaviorTargets;
-    public SimpleCharacter.NamedFloatTrait[] FloatTraitOverrides;
-    public SimpleCharacter.NamedStringTrait[] StringTraitOverrides;
+    public Character.NamedFloatTrait[] FloatTraitOverrides;
+    public Character.NamedStringTrait[] StringTraitOverrides;
 }
 
 public struct CharacterLevelDescriptorArray
@@ -88,9 +90,9 @@ public struct LevelDescriptor
 public struct RuntimeLevelCharDescriptor
 {
     public string name;
-    public SimpleCharacter character;
+    public Character character;
 
-    public RuntimeLevelCharDescriptor(string name, SimpleCharacter character)
+    public RuntimeLevelCharDescriptor(string name, Character character)
     {
         this.name = name;
         this.character = character;
@@ -103,11 +105,13 @@ public class Level : MonoBehaviour
 
     public bool _levelGenerated = false;
     public static Level instance;
-    public  static float Size = .9f;
-    public float padding = .1f;
+    public static float Size = .9f;
+    public float _size = .9f;
+    public float _padding = .1f;
     //Defines how many tiles a character can move with respect to 1 point of speed
     public static float SpeedToTileMovementFactor = 4.0f;
 
+    [Foldout("Character influences")]
     public LayerMask DetectionLayerMask = default;
     [Foldout("Debug")]
     public  GameObject[] _tile3DObjectsBase = new GameObject[] { };
@@ -124,6 +128,7 @@ public class Level : MonoBehaviour
     public BoxCollider[] _tileDisplayColliders;
 
     public Color _defaultTileDisplayColor = default;
+    [Foldout("Descriptors")]
     public LevelDescriptor levelDescriptor = default;
     public bool getLevelDescriptorsFromPlayerPrefs = false;
     [FormerlySerializedAs("baseTileDB")]
@@ -169,7 +174,9 @@ public class Level : MonoBehaviour
             Debug.LogWarning("Found duplicates " + String.Join(", ",duplicates.ToArray()));
         }
     }
+    [Foldout("Bounds")]
     public Vector2 _boundsStart;
+    [Foldout("Bounds")]
     public Vector2 _boundsEnd;
     
     [HideInInspector]
@@ -179,6 +186,7 @@ public class Level : MonoBehaviour
 
     #endregion
     
+    [Foldout("Descriptors")]
     public String[] CellStringList; 
     private async Task Awake()
     {
@@ -252,7 +260,7 @@ public class Level : MonoBehaviour
                     continue;
                 }
                 requiredCharacter.passiveDirective = new ForegoDirective();
-                if (!_behaviorRegistry.isBehavior("default enemy behavior"))
+                if (!_behaviorRegistry.isBehavior(cld.behavior))
                 {
                     Debug.LogError("Could not find behavior of that name");
                     continue;
@@ -321,7 +329,7 @@ public class Level : MonoBehaviour
         return Task.CompletedTask;
     }
 
-    [ContextMenu("Test")]
+    [ContextMenu("Serialize level to console")]
     public void PrintLevelToJSON()
     {
         Debug.Log(LevelToJSON()); 
@@ -372,8 +380,10 @@ public class Level : MonoBehaviour
                 }
 
                 newCharacter.icon = characterIcons.GetIcon(cld.iconName);
+                newCharacter._facingDirection = cld.facing;
                 newCharacter.transform.position = CoordToWorld(TileCoordinate.IndexToCoord(cld.index));
-                newCharacter.transform.rotation = Quaternion.identity;
+                var newRotation = Quaternion.Euler(0.0f, RotationBetween(cld.facing), 0.0f);
+                newCharacter.transform.rotation = newRotation;
                 newCharacter.transform.name = cld.name;
                 newCharacter.name = cld.name;
                 newCharacter.MyTile = Tiles[cld.index];
@@ -587,8 +597,8 @@ public class Level : MonoBehaviour
     private void CalculateBounds()
     {
         _boundsStart = new Vector2(-Size/2f, -Size/2f);
-        _boundsEnd = new Vector2((LWidth - 1) * (Size + padding) + ((Size + padding)/ 2f), (LHeight-1) * (Size + padding) +
-            (Size + padding) / 2f);
+        _boundsEnd = new Vector2((LWidth - 1) * (Size + _padding) + ((Size + _padding)/ 2f), (LHeight-1) * (Size + _padding) +
+            (Size + _padding) / 2f);
     }
     
 
@@ -605,12 +615,12 @@ public class Level : MonoBehaviour
         this.GetComponent<BoxCollider>().center =
             new Vector3((_boundsEnd.x + _boundsStart.x) / 2f, 0f, (_boundsStart.y + _boundsEnd.y) / 2f);
         this.GetComponent<BoxCollider>().size =
-            new Vector3((Size + padding) * (LWidth), 4f, (Size + padding) * (LHeight) + Size/2f);
+            new Vector3((Size + _padding) * (LWidth), 4f, (Size + _padding) * (LHeight) + Size/2f);
     }
 
     public Vector3 CoordToWorld(TileCoordinate tc)
     {
-        return new Vector3((Size + padding) * tc.x, 0f, (Size + padding) * tc.y);
+        return new Vector3((Size + _padding) * tc.x, 0f, (Size + _padding) * tc.y);
     }
 
     public Vector3 CoordToWorld(int index)
@@ -931,10 +941,14 @@ public class Level : MonoBehaviour
             TileDisplays[location].gameObject.SetActive(newState);
         }
     }
+    [Foldout("Level editor")]
     [HideInInspector]public bool isATileSelected = false;
+    [Foldout("Level editor")]
     public Tile selectedTile;
 
+    [Foldout("Level editor")]
     public UnityEvent TileSelected;
+    [Foldout("Level editor")]
     public UnityEvent<int> TileDeselected;
     
     public bool isLocationValid(int key)
@@ -969,13 +983,19 @@ public class Level : MonoBehaviour
 
     #endregion
     #region Character selection
+        [Foldout("Level editor")]
         public bool isACharacterSelected = false;
-        public SimpleCharacter selectedCharacter;
+        [Foldout("Level editor")]
+        public Character selectedCharacter;
 
+        [Foldout("Level editor")]
         public bool isACharacterHighlighted = false;
-        public SimpleCharacter highlightedCharacter;
+        [Foldout("Level editor")]
+        public Character highlightedCharacter;
 
+        [Foldout("Level editor")]
         public UnityEvent OnCharacterSelected;
+        [Foldout("Level editor")]
         public UnityEvent<string> OnCharacterDeselected;
 
         public bool isAnyCharacterOnTile(int index)
@@ -1002,7 +1022,7 @@ public class Level : MonoBehaviour
     #endregion
     #region Faction Management
 
-    public List<SimpleCharacter> GetCharactersOfFaction
+    public List<Character> GetCharactersOfFaction
     (EFaction faction)
     {
         return characters.FindAll((el) => el.character.faction == faction)
@@ -1018,12 +1038,13 @@ public class Level : MonoBehaviour
 
     //Get the character on a provided tile index
     //Get Character On tile
-    public SimpleCharacter GetCharacterOnTile(int index)
+    public Character GetCharacterOnTile(int index)
     {
         return characters.Find(ch => ch.character.MyTile.tileKey == index).character;
     }
-    public UnityEvent<int, SimpleCharacter> CharacterChangedTile;
-    public void ChangeCharacterTile(SimpleCharacter character, int newTileIndex)
+    [Foldout("Character influences")]
+    public UnityEvent<int, Character> CharacterChangedTile;
+    public void ChangeCharacterTile(Character character, int newTileIndex)
     {
         character.MyTile.CharacterExit(character);
         character.MyTile = Tiles[newTileIndex];
@@ -1054,7 +1075,7 @@ public class Level : MonoBehaviour
         }   
         return output;
     }
-
+    [Foldout("Character influences")]
     public UnityEvent<int> TileChanged;
     public void ChangeTileBase(int index, String newBase)
     {
@@ -1078,22 +1099,22 @@ public class Level : MonoBehaviour
     
     #region Pathfinding helpers
 
-    public bool debugPathfinder = false;
+    [SerializeField][Foldout("Pathfinder")]public bool debugPathfinder = false;
     [SerializeField][Foldout("Pathfinder")] public Color _OpenColor;
     [SerializeField][Foldout("Pathfinder")] public Color _ClosedColor;
     [SerializeField][Foldout("Pathfinder")] public Color _PathColor;
     [SerializeField][Foldout("Pathfinder")] public int _IterationsPerFrame;
-    [SerializeField]
+    [SerializeField][Foldout("Pathfinder")]
     public AStar pathFinder;
-    [SerializeField] private int height;
-    [SerializeField] private int width;
+    [SerializeField][Foldout("Debug")] private int height;
+    [SerializeField][Foldout("Debug")] private int width;
 
     public List<int> Get4NeighboringTiles(int index)
     {
         List<int> temp= new List<int>();
-        foreach(ELinkDirection dir in Enum.GetValues(typeof(ELinkDirection)))
+        foreach(ELevelDirection dir in Enum.GetValues(typeof(ELevelDirection)))
         {
-            if (isLocationValid(DirectionOntoLocation(index, ELinkDirection.Down)))
+            if (isLocationValid(DirectionOntoLocation(index, ELevelDirection.Down)))
             {   
                 temp.Append(DirectionOntoLocation(index, dir));
             }
@@ -1129,50 +1150,124 @@ public class Level : MonoBehaviour
         }
     }
     
-    public enum ELinkDirection
+    
+    /// <summary>
+    /// The rotation between consecutive directions is 90 degrees. This will be easier in the long run
+    /// But what about things like rotating from down to Right?? It will 
+    /// </summary>
+    public enum ELevelDirection
     {
-        Left,
-        Right,
-        Up,
-        Down
+        Right=0,
+        Up =1,
+        Left=2,
+        Down=3
     }
-    public ELinkDirection DirectionFrom(int From, int To)
+    //Assumes they are not the same tile
+    public ELevelDirection? DirectionFrom(int From, int To)
     {
         TileCoordinate TFrom = TileCoordinate.IndexToCoord(From);
         TileCoordinate TTo = TileCoordinate.IndexToCoord(To);
         //This does not check if it is further away
         //The contract is that if there is to be a path between them, it will either be a straight line or just adjacent
-        if (TFrom.y - TTo.y >0)
+        if (TTo.y >TFrom.y)
         {
-            return ELinkDirection.Up;
+            return ELevelDirection.Up;
+        }
+        if(TTo.y<TFrom.y)
+        {
+            return ELevelDirection.Down;
+        }
+
+        if (TTo.x > TFrom.x)
+        {
+            return ELevelDirection.Right;
         }
         else
         {
-            return ELinkDirection.Right;
+            return ELevelDirection.Left;
+        }
+
+        return null;
+    }
+
+    public int StepsBetween(ELevelDirection From, ELevelDirection To)
+    {
+        if (From == To)
+        {
+            return 0;
+        }
+        //Same as rotation, but now you have to return the direction and number of steps
+        //For example, turning from Right to Up should be +1 step
+        //Right to left should be +-2,
+        //Right to Down should be -1
+        
+        //Let's go through some examples:
+        //Right
+            // Up +1
+            // Left +2
+            // Down -1 or +3-4
+        //Up
+            //Right +3 or +3-4
+            //Left +1
+            //Down 2
+        //I guess we first take the difference
+        
+        int fromValue = (int) From;
+        int toValue = (int)To;
+        int difference = toValue - fromValue;
+        int total_directions = Enum.GetValues(typeof(ELevelDirection)).Length; 
+        // Then we judge if it's bigger than half the count
+        if (difference > total_directions/ 2)
+        {
+            Debug.Log($"Difference from {To} to {From} is greater than half, so we're inverting the steps");
+            return (difference - (total_directions / 2));
+        }
+        else
+        {
+            Debug.Log($"Difference from {To} to {From} is not greater than half, so we're not inverting the steps");
+            if (Math.Abs(difference) == (total_directions / 2))
+            {
+                difference = Math.Abs(difference);
+            }
+            return difference;
         }
     }
-    
+    public float RotationBetween(ELevelDirection From, ELevelDirection To = ELevelDirection.Right)
+    {
+        //Return the float rotation between directions
+        // if (From == To)
+        // {
+        //     return 0f;
+        // }
+
+        int fromValue = (int) From;
+        int toValue = (int)To;
+        int difference = toValue - fromValue;
+        float rotation = (difference+1) * 90.0f;
+        // Debug.Log($"Difference is {difference}. Y Rotation from {From} to {To} is {rotation} ");
+        return rotation;
+    }
     //Returns the direction added to a location
     //If the tile is the leftmost tile or rightmost tile, returns MaxValue
-    public int DirectionOntoLocation(int loc, ELinkDirection direction)
+    public int DirectionOntoLocation(int loc, ELevelDirection direction)
     {
         TileCoordinate temp;
         switch (direction)
         {
-            case ELinkDirection.Up:
+            case ELevelDirection.Up:
                 //Check if at the topmost row
                 if (loc+LWidth > LWidth*LHeight-1)
                 {
                     return Int32.MaxValue;
                 }
                 return loc + LWidth;
-            case ELinkDirection.Down:
+            case ELevelDirection.Down:
                 if (loc - LWidth < 0)
                 {
                     return Int32.MaxValue;
                 }
                 return loc - LWidth;
-            case ELinkDirection.Left:
+            case ELevelDirection.Left:
                 //Check if it is leftmost
                 //left is x=0
                 if (loc % LWidth == 0)
@@ -1183,7 +1278,7 @@ public class Level : MonoBehaviour
                 {
                     return loc-1;
                 }
-            case ELinkDirection.Right:
+            case ELevelDirection.Right:
                 //Check if it is rightmost
                 //Rightmost is x=width-1
                 if (loc % LWidth == LWidth - 1)
@@ -1196,7 +1291,7 @@ public class Level : MonoBehaviour
         return Int32.MaxValue;
     }
 
-    public bool HasValidLocationInDirection(int loc, ELinkDirection direction)
+    public bool HasValidLocationInDirection(int loc, ELevelDirection direction)
     {
         var other = DirectionOntoLocation(loc, direction);
         if (other == Int32.MaxValue)

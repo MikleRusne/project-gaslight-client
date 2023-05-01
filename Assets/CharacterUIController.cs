@@ -27,7 +27,7 @@ namespace  Gaslight.UI
         [Foldout("Action bar")] public GameObject _actionPointsFilledPrefab;
         
         
-        public SimpleCharacter Invoker;
+        public Character Invoker;
 
         void Start()
         {

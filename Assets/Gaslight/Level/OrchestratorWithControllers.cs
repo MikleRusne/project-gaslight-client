@@ -28,13 +28,14 @@ namespace GameManagement{
         public VisualTreeAsset _playerCharacterIconTemplate;
         public CancellationTokenSource directiveSelectCancel = new CancellationTokenSource();
         public CameraController _cam;
+        public bool _skipPlayerTurn;
         public PlayerController(DirectiveManager manager,
             DirectiveIconManager directiveIcon,
             CameraController cam,
             VisualElement playerControllerUI,
             VisualTreeAsset moveDisplayPrefab,
             VisualTreeAsset playerCharacterIconTemplate,
-            SelectUnderMouse selector)
+            SelectUnderMouse selector, bool skipPlayerTurn)
         {
             _directiveIcon = directiveIcon;
             _directiveManager = manager;
@@ -42,10 +43,11 @@ namespace GameManagement{
             _moveDisplayPrefab = moveDisplayPrefab;
             _selector = selector;
             _playerCharacterIconTemplate = playerCharacterIconTemplate;
+            _skipPlayerTurn = skipPlayerTurn;
             _cam = cam;
         }
 
-        public void CancelDirective()
+        public void CancelPlayerDirective()
         {
             Debug.Log("Trying to cancel directive");
             directiveSelectCancel.Cancel();
@@ -53,7 +55,7 @@ namespace GameManagement{
         public bool acceptInput = false;
         public bool block = false; 
         [ContextMenu("Accept")]
-        public void AcceptInput(InputAction.CallbackContext ctx)
+        public void AcceptPlayerInput(InputAction.CallbackContext ctx)
         {
             if (ctx.performed&& acceptInput)
             {
@@ -66,8 +68,8 @@ namespace GameManagement{
         public string currentlyExecutingMove = "";
         private bool isMoveRequested = false;
         private bool lockMoveSelection = false;
-        [FormerlySerializedAs("players")] public List<SimpleCharacter> _players;
-        async Task PerformMove(SimpleCharacter character, String name, CancellationToken ct)
+        [FormerlySerializedAs("players")] public List<Character> _players;
+        async Task PerformMove(Character character, String name, CancellationToken ct)
         {
             CancellationTokenSource tileSelectionCTS = new CancellationTokenSource();
             Debug.Log("Starting performance of " + name + " with " + character.name);
@@ -146,7 +148,7 @@ namespace GameManagement{
             lockMoveSelection = false;
         }
 
-        public int CalculateTurnAbleCharacters(List<SimpleCharacter> players)
+        public int CalculateTurnAbleCharacters(List<Character> players)
         {
             int counter = 0;
             foreach (var player in players)
@@ -176,7 +178,7 @@ namespace GameManagement{
         }
         int currentPlayerIndex = 0;
 
-        void SwitchPlayerCharacter(List<SimpleCharacter> players)
+        void SwitchPlayerCharacter(List<Character> players)
         {
             if (CalculateTurnAbleCharacters(players) < 2)
             {
@@ -207,6 +209,11 @@ namespace GameManagement{
         }
         public async Task Execute()
         {
+            if (_skipPlayerTurn)
+            {
+                await Task.Delay(millisecondsDelay:500);
+                return;
+            }
             isPlayerChanged = true;
             var players = Level.instance.GetCharactersOfFaction(EFaction.Player);
             this._players = this._players;
@@ -308,7 +315,7 @@ namespace GameManagement{
                         icon.style.backgroundImage = new StyleBackground(_directiveIcon.GetIcon(move));
                         newButton.RegisterCallback<ClickEvent>(async (evt) =>
                         {
-                            CancelDirective();
+                            CancelPlayerDirective();
                             // directiveSelectCancel.Dispose();
                             directiveSelectCancel = new CancellationTokenSource();
                             Debug.Log("Trying to perform "+ move + ". State of token: " + directiveSelectCancel.IsCancellationRequested);
@@ -381,7 +388,7 @@ namespace GameManagement{
                  // CurrentTurnObject.enabled = true;
                  CurrentTurnObject.target = enemy.transform;
                  enemy.behavior.Tick();
-                 Debug.Log("Making "+ enemy.name + " perform passive action.");
+                 // Debug.Log("Making "+ enemy.name + " perform passive action.");
                  await enemy.passiveDirective.DoAction();
                  // Debug.Log("Moving on from action");
                  CurrentTurnObject.gameObject.SetActive(false);
@@ -422,6 +429,10 @@ public class OrchestratorWithControllers : MonoBehaviour
     public void OnValidate()
     {
         CurrentTurnFollower.offset = new Vector3(0.0f, CurrentTurnFollowerYOffset, 0.0f);
+        if (playerController != null)
+        {
+            playerController._skipPlayerTurn = this._skipPlayerTurn;
+        }
     }
     // public Dictionary<EFaction, List<GameAction>> QueuedActions = new Dictionary<EFaction, List<GameAction>>();
     public void Awake()
@@ -440,7 +451,7 @@ public class OrchestratorWithControllers : MonoBehaviour
         _playerControllerUI = _uiDocument.rootVisualElement.Q("PLAYER_CONTROLLER");
         playerController = new PlayerController(
             _directiveManager, _directiveIcon,
-            _cam, _playerControllerUI, validMoveTemplate, _playerCharacterIconTemplate,_selector);
+            _cam, _playerControllerUI, validMoveTemplate, _playerCharacterIconTemplate,_selector, _skipPlayerTurn);
         enemyController = new EnemyController(currentTurnFollowerPrefab, _cam);
         HideEnemyTurnUI();
         HidePlayerTurnUI();
@@ -467,7 +478,14 @@ public class OrchestratorWithControllers : MonoBehaviour
     {
         if (playerTurn)
         {
-            await PlayerTurn();
+            if (!_skipPlayerTurn)
+            {
+                await PlayerTurn();
+            }
+            else
+            {
+                await Task.Delay(millisecondsDelay: 500);
+            }
             playerTurn = false;
         }
         else

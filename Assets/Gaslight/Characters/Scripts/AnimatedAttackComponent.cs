@@ -5,7 +5,7 @@ namespace Gaslight
 {
     public class AnimatedAttackComponent: MonoBehaviour
     {
-        public SimpleCharacter Invoker;
+        public Character Invoker;
         public GameObject Weapon;
         public Material WeaponMaterial;
 
@@ -14,7 +14,7 @@ namespace Gaslight
             if (Weapon != null)
                 WeaponMaterial = Weapon.GetComponent<Renderer>().material;
             else WeaponMaterial = null;
-            Invoker = this.GetComponent<SimpleCharacter>();
+            Invoker = this.GetComponent<Character>();
         }
 
         public float dissolve;

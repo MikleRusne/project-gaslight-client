@@ -50,7 +50,7 @@ public abstract class Directive
         Default
     }
 
-    public SimpleCharacter Invoker;
+    public Character Invoker;
 
     public GDType type = GDType.Default;
     
@@ -75,7 +75,7 @@ public abstract class Directive
     public abstract Task EndVisualize();
 }
 
-public class ManualMoveDirective : Directive
+public class TryMoveDirective : Directive
 {
     private bool targetSet = false;
     public override int actionPointCost => 2;

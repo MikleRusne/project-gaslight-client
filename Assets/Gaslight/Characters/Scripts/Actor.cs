@@ -1,20 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Behaviors;
 using Characters;
-using CleverCrow.Fluid.BTs.Trees;
-using Gaslight.Characters.Logic;
 using Tiles;
-using UnityEditor;
 using UnityEngine;
-using TaskStatus = CleverCrow.Fluid.BTs.Tasks.TaskStatus;
 
 namespace Gaslight.Characters
 {
-   public class Actor: SimpleCharacter
+   public class Actor: Character
    {
         public override MovementComponent movementComponent => _movementComponent;
         private AnimatedMovementComponent _movementComponent;
@@ -30,8 +27,10 @@ namespace Gaslight.Characters
             
         }
 
-        public override void OnCharacterTileChanged(int location, SimpleCharacter character)
+
+        public override void OnCharacterTileChanged(int location, Character character)
         {
+            
             this.behavior.HandleCharacterTileChange(location, character);
         }
 
@@ -40,10 +39,12 @@ namespace Gaslight.Characters
             base.Start();
         }
 
-        public int GetMaxTraversibleTilesInOneTurn()
+        public override int GetMaxTraversibleTilesInOneTurn()
         {
             return Mathf.FloorToInt(Level.SpeedToTileMovementFactor * GetFloatTrait("speed"));
         }
+
+       
 
         public override (bool, float) GetPathfindingHeuristic(Node previous, int to)
         {
@@ -60,45 +61,56 @@ namespace Gaslight.Characters
             return (canGetThere,Level.instance.ManhattanDistance(MyTile.tileKey, to));
         }
 
-        public async Task<List<int>> GetPath(int start, int end)
+        public async override Task<(bool oneGo,List<int> path)> GetPathTowards(int start, int end)
         {
             var path = await Level.instance.FindPath(start, end, GetPathfindingHeuristic, false);
-            return path;
+            if (path == null)
+            {
+                return (false, null);
+            }
+            if (path.Count <= GetMaxTraversibleTilesInOneTurn() + 1)
+            {
+                return (true, path);
+            }
+            path = path.Take(GetMaxTraversibleTilesInOneTurn()+1).ToList();
+
+            if (GetMaxTraversibleTilesInOneTurn() == 0)
+            {
+                Debug.Log("Character's traversible turns are 0");
+            }
+            
+            return (false, path);
         }
         public override async Task Attack(int location)
         {
             await this.GetComponent<AnimatedAttackComponent>().Attack(location);
         }
 
+
         public override async Task<bool> MoveToTile(int index)
         {
             // Debug.Log("Calling find path");
-            var temp = await GetPath(MyTile.tileKey, index);
+            var temp = await GetPathTowards(MyTile.tileKey, index);
             // Trim that path to however long it can go
-            if (temp == null)
+            
+            if (temp.path == null)
             {
                 Debug.LogError("Could not find a path between " + this.MyTile.tileKey+ ", "+ index);
                 return false;
             }
 
-            if (GetMaxTraversibleTilesInOneTurn() == 0)
-            {
-                Debug.Log("Character's traversible turns are 0");
-            }
-            // Debug.Log($"{transform.name} has a speed of {GetFloatTrait("speed")}, and can go " +
-                      // $"{GetMaxTraversibleTilesInOneTurn()}, path is {temp.Count} long: {temp.Aggregate("",((s, i) => s+TileCoordinate.IndexToCoord(i)))+ ","}.");
-            temp = temp.Take(GetMaxTraversibleTilesInOneTurn()+1).ToList();
-            // Debug.Log($"path is {temp.Count} long: {temp.Aggregate("",((s, i) => s+TileCoordinate.IndexToCoord(i)))+ ","}.");
-            // Debug.Log("Moving on from find path");
-            
-            {
-                // Debug.Log("Telling movement component to move");
-                await _movementComponent.StartMoving(temp);
-                // Debug.Log("Moving on from movement component");
-                return true;
-            }
+            // Debug.Log("Telling movement component to move");
+            await _movementComponent.StartMoving(temp.path);
+            // Debug.Log("Moving on from movement component");
+            return true;
         }
-        
+
+        public override async Task<bool> TraversePath(List<int> path)
+        {
+            await _movementComponent.StartMoving(path);
+            return true;
+        }
+
         public override void OnTileSelected()
         {
             
@@ -108,15 +120,15 @@ namespace Gaslight.Characters
         {
         }
 
-        public override void OnAttacked(SimpleCharacter other)
+        public override void OnAttacked(Character other)
         {
         }
 
-        public override void OnAttack(SimpleCharacter other)
+        public override void OnAttack(Character other)
         {
         }
 
-        public override void Attack(SimpleCharacter target)
+        public override void Attack(Character target)
         {
         }
    }
